@@ -8,9 +8,11 @@ export default function PlayLayout({
 }>) {
   // Use dark background by default to prevent white flash during redirect/countdown
   return (
-    <div>
+    <div className="flex min-h-screen flex-col">
     <SiteHeader />
-    <div className="base-background flex flex-1 flex-col">{children}</div>
+    <main className="flex-1 base-background flex flex-col">
+      {children}
+      </main>
     </div>
   );
 }

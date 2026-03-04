@@ -50,10 +50,14 @@ interface Player {
 
 interface HostLeaderboardProps {
   players: Player[];
+  onStatistics?: () => void;
+  onRestart?: () => void;
+  onExport?: () => void;
 }
 
 interface PlayerResultProps {
   player: Player & { rank: number; totalPlayers: number };
+  onStatistics?: () => void;
 }
 
 // ========== COMPONENTS ==========
@@ -133,7 +137,7 @@ function HeaderNav({ isHost, onDashboard, onRestart, onExport, onStatistics }: H
 }
 
 // Host View: Full Leaderboard with Podium
-function HostLeaderboard({ players }: HostLeaderboardProps) {
+function HostLeaderboard({ players, onStatistics, onExport, onRestart }: HostLeaderboardProps) {
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
   const top1 = sortedPlayers[0];
   const top2 = sortedPlayers[1];
@@ -241,8 +245,8 @@ function HostLeaderboard({ players }: HostLeaderboardProps) {
   );
 
   return (
-    <div className="base-background flex-1 overflow-auto p-4 md:p-8">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-2">
+    <div className="base-background relative flex-1 overflow-auto p-4 md:p-8">
+      <div className="relative mx-auto flex w-full flex-col gap-2">
         <div className="flex flex-col justify-center">
           <div className="mb-4 space-y-1 text-center">
             <h1 className="text-3xl font-bold tracking-tight text-orange-600 md:text-5xl dark:text-orange-400">
@@ -344,6 +348,51 @@ function HostLeaderboard({ players }: HostLeaderboardProps) {
           </div>
         </div>
 
+        <div className="translate-y fixed top-[40%] left-5 z-10 flex flex-col gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="button-yellow-outline size-10 rounded-full"
+                onClick={onRestart}>
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Restart</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" className="button-orange size-10 rounded-full" onClick={onExport}>
+                <Download className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Export</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+        <div className="translate-y fixed top-[43%] right-5 z-10 flex flex-col gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+            variant="ghost"
+            size="sm"
+            className="button-green size-10 rounded-full"
+            onClick={onStatistics}>
+            <BarChart3 className="h-4 w-4" />
+          </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              <p>Statistics</p>
+            </TooltipContent>
+          </Tooltip>
+          
+        </div>
+
         {/* Bottom Section: Players List */}
         {others.length > 0 && (
           <div className="mx-auto w-full max-w-4xl px-4">
@@ -356,7 +405,7 @@ function HostLeaderboard({ players }: HostLeaderboardProps) {
 }
 
 // Player View: Personal Result
-function PlayerResult({ player }: PlayerResultProps) {
+function PlayerResult({ player, onStatistics }: PlayerResultProps) {
   const router = useRouter();
 
   const formatDuration = (ms: number) => {
@@ -476,9 +525,9 @@ function PlayerResult({ player }: PlayerResultProps) {
           <Button
             variant="outline"
             className="button-orange-outline h-10 text-sm font-semibold"
-            onClick={() => router.push("/dashboard")}>
-            <Home className="mr-2 h-3.5 w-3.5" />
-            Home
+            onClick={onStatistics}>
+            <BarChart3 className="mr-2 h-3.5 w-3.5" />
+            Statistics
           </Button>
           <Button
             className="button-orange h-10 text-sm font-semibold"
@@ -496,6 +545,7 @@ function PlayerResult({ player }: PlayerResultProps) {
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Leaderboard() {
   const { id } = useParams() as { id: string };
@@ -995,18 +1045,13 @@ export default function Leaderboard() {
   }
 
   return (
-    <div className="bg-background flex min-h-screen flex-col">
-      <HeaderNav
-        isHost={isHost}
-        onDashboard={handleDashboard}
-        onRestart={handleRestart}
-        onExport={handleExport}
-        onStatistics={() => setShowStats(true)}
-      />
+    <div className="bg-background flex h-full flex-col">
       {isHost ? (
-        <HostLeaderboard players={players} />
+        <HostLeaderboard players={players} onRestart={handleRestart}
+        onExport={handleExport}
+        onStatistics={() => setShowStats(true)}/>
       ) : currentPlayer ? (
-        <PlayerResult player={currentPlayer} />
+        <PlayerResult player={currentPlayer} onStatistics={() => setShowStats(true)}/>
       ) : (
         <div className="flex flex-1 items-center justify-center p-4 text-center">
           <div className="max-w-md space-y-4">
