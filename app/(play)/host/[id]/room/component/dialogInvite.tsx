@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createNotification } from "@/app/actions/notification";
+import { createNotification } from "@/app/service/notification";
 import {
   Dialog,
   DialogContent,

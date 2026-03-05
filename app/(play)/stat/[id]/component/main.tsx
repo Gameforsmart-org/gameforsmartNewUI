@@ -11,14 +11,11 @@ import {
   CheckCircle2,
   XCircle,
   BarChart3,
-  ChevronLeft,
-  LayoutDashboard,
   Users,
   Check,
   FileQuestion,
   MessageSquare,
   Loader2,
-  ChevronRight,
   ChevronUp,
   ChevronDown
 } from "lucide-react";
@@ -62,6 +59,21 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
   const [players, setPlayers] = useState<PlayerWithResponses[]>([]);
   const [currentPlayerId, setCurrentPlayerId] = useState<string | undefined>();
   const [isCollapsedAll, setIsCollapsedAll] = useState(false);
+  const [collapsedItems, setCollapsedItems] = useState<Record<string, boolean>>({});
+
+  const toggleCollapseAll = () => {
+    const newState = !isCollapsedAll;
+    setIsCollapsedAll(newState);
+    const newCollapsedItems: Record<string, boolean> = {};
+    questions.forEach((q) => {
+      newCollapsedItems[q.id] = newState;
+    });
+    setCollapsedItems(newCollapsedItems);
+  };
+
+  const toggleCollapse = (id: string, currentState: boolean) => {
+    setCollapsedItems((prev) => ({ ...prev, [id]: !currentState }));
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -250,7 +262,7 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="base-background animate-in fade-in flex min-h-screen flex-col duration-200">
       {/* 1. Header Navigation */}
-      <header className="flex h-16 shrink-0 items-center justify-between px-6">
+      <header className="container mx-auto flex h-16 max-w-6xl shrink-0 items-center justify-between px-6">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-bold text-orange-900">
             <BarChart3 className="h-6 w-6" />
@@ -258,24 +270,24 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={() => setIsCollapsedAll(!isCollapsedAll)} className="gap-2">
-            {isCollapsedAll ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            {isCollapsedAll ? "expand all" : "collapse all"}
+          <Button variant="outline" onClick={toggleCollapseAll} className="gap-2">
+            {isCollapsedAll ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronUp className="h-4 w-4" />
+            )}
+            {isCollapsedAll ? "Expand" : "Collapse"}
           </Button>
-          <Button variant="outline" onClick={() => router.push(`/result/${id}`)} className="gap-2">
+          {/* <Button variant="outline" onClick={() => router.push(`/result/${id}`)} className="gap-2">
             <ChevronLeft className="h-4 w-4" />
             Back to Result
-          </Button>
-          <Button onClick={() => router.push("/dashboard")} className="button-orange gap-2">
-            <LayoutDashboard className="h-4 w-4" />
-            Dashboard
-          </Button>
+          </Button> */}
         </div>
       </header>
 
       {/* 2. Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto bg-slate-50/30">
-        <div className="container mx-auto max-w-6xl space-y-8 p-6 pb-20">
+        <div className="container mx-auto max-w-6xl space-y-4 p-6 pt-0 pb-20">
           {/* Summary Cards (Host Only) */}
           {isHost && (
             <div className="grid grid-cols-3 gap-3 md:gap-4">
@@ -333,7 +345,7 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
           )}
 
           {/* 4. Question Cards List */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             {questions.map((q, index) => {
               // Calculate Stats
               let stats,
@@ -355,23 +367,38 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
                 myStatus = getMyAnswerStatus(q.id);
               }
 
+              const isCollapsed = collapsedItems[q.id] ?? false;
+
               return (
                 <Card
                   key={q.id}
                   className="overflow-hidden border-none py-0 shadow-sm ring-1 ring-slate-200">
                   <CardContent className="p-0">
                     {/* Header Row */}
-                    <div className="flex flex-col items-start justify-between gap-2 p-4 pb-2">
-                      <div className="flex items-center justify-between gap-4 w-full">
-                        <Badge
-                          variant="secondary"
-                          className="rounded-md border-orange-100 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700 hover:bg-orange-100">
-                          Question {index + 1}
-                        </Badge>
+                    <div className="flex flex-col items-start justify-between gap-2 p-4">
+                      <div
+                        className="flex w-full cursor-pointer items-center justify-between gap-4"
+                        onClick={() => toggleCollapse(q.id, isCollapsed)}>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="secondary"
+                            className="rounded-md border-orange-100 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700 hover:bg-orange-100">
+                            Question {index + 1}
+                          </Badge>
+                          {isHost && stats && (
+                            <>
+                              <Badge variant="secondary" className="rounded-md border-orange-100 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700 hover:bg-orange-100">
+                                <span>{stats.percentCorrect}%</span> |
+                                <span>{stats.correctCount} correct</span> |
+                                <span>{stats.incorrectCount} incorrect</span>
+                              </Badge>
+                            </>
+                          )}
+                        </div>
 
                         <div className="flex items-center gap-2">
                           {/* Host Badges */}
-                          {isHost && stats && (
+                          {/* {isHost && stats && (
                             <div className="flex shrink-0 gap-2">
                               <Badge
                                 variant="outline"
@@ -386,7 +413,7 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
                                 <span>{stats.correctCount}</span>
                               </Badge>
                             </div>
-                          )}
+                          )} */}
 
                           {/* Player Badges */}
                           {!isHost && myStatus && (
@@ -408,113 +435,123 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
                           )}
 
                           <Button
-                            variant="outline"
-                            onClick={() => setIsCollapsedAll(!isCollapsedAll)}
+                            variant="ghost"
+                            onClick={() => toggleCollapse(q.id, isCollapsed)}
                             className="gap-2">
-                            {isCollapsedAll ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
+                            {isCollapsed ? (
                               <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronUp className="h-4 w-4" />
                             )}
-                            {isCollapsedAll ? "expand" : "collapse"}
                           </Button>
                         </div>
                       </div>
-                      <h3 className="text-base leading-relaxed font-medium text-slate-800">
-                        {q.question}
-                      </h3>
+                      {!isCollapsed && (
+                        <h3 className="text-base leading-relaxed font-medium text-slate-800">
+                          {q.question}
+                        </h3>
+                      )}
                     </div>
 
-                    {/* Answer Options List */}
-                    <div className="px-4 pt-2 pb-4">
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        {q.answers.map((ans: any, idx) => {
-                          const isCorrect =
-                            (q.correct !== undefined && String(q.correct) === String(ans.id)) ||
-                            ans.isCorrect === true ||
-                            ans.is_correct === true;
+                    {!isCollapsed && (
+                      <>
+                        {/* Answer Options List */}
+                        <div className="px-4 pt-0 pb-4">
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            {q.answers.map((ans: any, idx) => {
+                              const isCorrect =
+                                (q.correct !== undefined && String(q.correct) === String(ans.id)) ||
+                                ans.isCorrect === true ||
+                                ans.is_correct === true;
 
-                          const optionLabel = String.fromCharCode(65 + idx); // A, B, C, D
-                          const answerText =
-                            ans.text || ans.answer || ans.option || ans.label || "";
+                              const optionLabel = String.fromCharCode(65 + idx); // A, B, C, D
+                              const answerText =
+                                ans.text || ans.answer || ans.option || ans.label || "";
 
-                          return (
-                            <div
-                              key={ans.id || idx}
-                              className={cn(
-                                "relative flex items-center gap-3 rounded-md border p-3 text-sm transition-colors",
-                                isCorrect
-                                  ? "border-green-200 bg-green-50 text-green-900 ring-1 ring-green-100"
-                                  : "border-slate-200 bg-white text-slate-600"
-                              )}>
-                              <span
-                                className={cn(
-                                  "flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-bold",
-                                  isCorrect
-                                    ? "bg-green-200 text-green-800"
-                                    : "bg-slate-100 text-slate-500"
-                                )}>
-                                {optionLabel}
-                              </span>
-                              <span className="flex-1 leading-tight font-medium">{answerText}</span>
+                              return (
+                                <div
+                                  key={ans.id || idx}
+                                  className={cn(
+                                    "relative flex items-center gap-3 rounded-md border p-3 text-sm transition-colors",
+                                    isCorrect
+                                      ? "border-green-200 bg-green-50 text-green-900 ring-1 ring-green-100"
+                                      : "border-slate-200 bg-white text-slate-600"
+                                  )}>
+                                  <span
+                                    className={cn(
+                                      "flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-bold",
+                                      isCorrect
+                                        ? "bg-green-200 text-green-800"
+                                        : "bg-slate-100 text-slate-500"
+                                    )}>
+                                    {optionLabel}
+                                  </span>
+                                  <span className="flex-1 leading-tight font-medium">
+                                    {answerText}
+                                  </span>
 
-                              {isCorrect && (
-                                <CheckCircle2 className="absolute right-3 h-4 w-4 text-green-600" />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Footer: Progress / Stats */}
-                    {isHost && stats && (
-                      <div className="space-y-2 px-4 pt-0 pb-4">
-                        <div className="text-muted-foreground flex items-center justify-between text-xs font-medium tracking-wide uppercase">
-                          <span>Accuracy</span>
-                          <span className="font-bold text-slate-900">{stats.percentCorrect}%</span>
-                        </div>
-                        <Progress
-                          value={stats.percentCorrect}
-                          className="h-2"
-                          indicatorColor={
-                            stats.percentCorrect > 75
-                              ? "bg-green-500"
-                              : stats.percentCorrect > 40
-                                ? "bg-yellow-500"
-                                : "bg-red-500"
-                          }
-                        />
-                        <div className="text-muted-foreground flex justify-between text-[10px]">
-                          <span>{stats.correctCount} correct</span>
-                          <span>{stats.incorrectCount} incorrect</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* For Player: Show their answer if wrong */}
-                    {!isHost && myStatus?.status === "incorrect" && (
-                      <div className="border-t border-red-100 bg-red-50/50 px-6 py-4">
-                        <div className="flex flex-col gap-1">
-                          <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-red-600 uppercase">
-                            <XCircle className="h-3.5 w-3.5" /> Your Answer:
-                          </span>
-                          <p className="mt-0.5 pl-5 font-medium text-red-700">
-                            {(() => {
-                              const userAns = q.answers.find(
-                                (a) => String(a.id).trim() === String(myStatus?.userAnswerId).trim()
+                                  {isCorrect && (
+                                    <CheckCircle2 className="absolute right-3 h-4 w-4 text-green-600" />
+                                  )}
+                                </div>
                               );
-                              return userAns
-                                ? userAns.text ||
-                                    userAns.answer ||
-                                    userAns.option ||
-                                    userAns.label ||
-                                    "Answer ID match but no text"
-                                : "No answer";
-                            })()}
-                          </p>
+                            })}
+                          </div>
                         </div>
-                      </div>
+
+                        {/* Footer: Progress / Stats */}
+                        {/* {isHost && stats && (
+                          <div className="space-y-2 px-4 pt-0 pb-4">
+                            <div className="text-muted-foreground flex items-center justify-between text-xs font-medium tracking-wide uppercase">
+                              <span>Accuracy</span>
+                              <span className="font-bold text-slate-900">
+                                {stats.percentCorrect}%
+                              </span>
+                            </div>
+                            <Progress
+                              value={stats.percentCorrect}
+                              className="h-2"
+                              indicatorColor={
+                                stats.percentCorrect > 75
+                                  ? "bg-green-500"
+                                  : stats.percentCorrect > 40
+                                    ? "bg-yellow-500"
+                                    : "bg-red-500"
+                              }
+                            />
+                            <div className="text-muted-foreground flex justify-between text-[10px]">
+                              <span>{stats.correctCount} correct</span>
+                              <span>{stats.incorrectCount} incorrect</span>
+                            </div>
+                          </div>
+                        )} */}
+
+                        {/* For Player: Show their answer if wrong */}
+                        {!isHost && myStatus?.status === "incorrect" && (
+                          <div className="border-t border-red-100 bg-red-50/50 px-6 py-4">
+                            <div className="flex flex-col gap-1">
+                              <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-red-600 uppercase">
+                                <XCircle className="h-3.5 w-3.5" /> Your Answer:
+                              </span>
+                              <p className="mt-0.5 pl-5 font-medium text-red-700">
+                                {(() => {
+                                  const userAns = q.answers.find(
+                                    (a) =>
+                                      String(a.id).trim() === String(myStatus?.userAnswerId).trim()
+                                  );
+                                  return userAns
+                                    ? userAns.text ||
+                                        userAns.answer ||
+                                        userAns.option ||
+                                        userAns.label ||
+                                        "Answer ID match but no text"
+                                    : "No answer";
+                                })()}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </CardContent>
                 </Card>

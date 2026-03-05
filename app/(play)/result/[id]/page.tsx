@@ -5,14 +5,11 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
   const params = await props.params;
   return generateMeta({
     title: "Leaderboard",
-    description:
-      "Leaderboard for the game",
+    description: "Leaderboard for the game",
     canonical: "/result/" + params.id
   });
 }
 
-export default function page(){
-    return(
-        <Leaderboard/>
-    );
+export default function page() {
+  return <Leaderboard />;
 }

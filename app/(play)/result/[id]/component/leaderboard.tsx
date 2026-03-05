@@ -31,7 +31,6 @@ interface Player {
   image: string | null;
   answered: number;
   score: number; // Raw score from game
-  normalizedScore: number; // Score normalized to max 100
   correctAnswers: number; // Number of correct answers
   totalQuestions: number; // Total questions in the quiz
   responses: any[]; // Raw responses
@@ -51,80 +50,6 @@ interface PlayerResultProps {
 }
 
 // ========== COMPONENTS ==========
-
-// Header Navigation (shared by both views)
-interface HeaderNavProps {
-  isHost: boolean;
-  onDashboard?: () => void;
-  onRestart?: () => void;
-  onExport?: () => void;
-  onStatistics?: () => void;
-}
-
-function HeaderNav({ isHost, onDashboard, onRestart, onExport, onStatistics }: HeaderNavProps) {
-  return (
-    <header className="sticky top-0 z-50 border-b border-orange-100 bg-orange-50/50 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/50">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        {/* Logo area */}
-        <div className="flex items-center gap-2">
-          <img
-            src="/gameforsmartlogo.png"
-            alt="Gameforsmart"
-            className="h-8 w-auto opacity-90 dark:opacity-100"
-          />
-        </div>
-
-        {/* Actions - Different for Host vs Player */}
-        <div className="flex items-center gap-2">
-          {isHost ? (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="button-orange gap-2"
-                onClick={onDashboard}>
-                <LayoutDashboard className="h-4 w-4" />
-                <span className="hidden sm:inline">Dashboard</span>
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="button-green gap-2"
-                onClick={onStatistics}>
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline">Statistics</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="button-yellow-outline gap-2"
-                onClick={onRestart}>
-                <RotateCcw className="h-4 w-4" />
-                <span className="hidden sm:inline">Restart</span>
-              </Button>
-
-              <Button size="sm" className="button-orange gap-2" onClick={onExport}>
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Export</span>
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="secondary"
-              size="sm"
-              className="button-green gap-2"
-              onClick={onStatistics}>
-              <BarChart3 className="h-4 w-4" />
-              <span className="font-medium">Statistics</span>
-            </Button>
-          )}
-        </div>
-      </div>
-    </header>
-  );
-}
 
 // Host View: Full Leaderboard with Podium
 function HostLeaderboard({ players, onStatistics, onExport, onRestart }: HostLeaderboardProps) {
@@ -204,7 +129,7 @@ function HostLeaderboard({ players, onStatistics, onExport, onRestart }: HostLea
                       </span>
                       {/* Tambahan subtitel jika perlu (opsional) */}
                       <span className="text-[10px] text-zinc-400 md:hidden">
-                        Score: {p.normalizedScore}
+                        Score: {p.score}
                       </span>
                     </div>
                   </div>
@@ -213,7 +138,7 @@ function HostLeaderboard({ players, onStatistics, onExport, onRestart }: HostLea
                 {/* Score - Centered */}
                 <td className="px-4 py-3 text-center">
                   <span className="inline-block rounded-lg bg-orange-50 px-3 py-1 text-base font-black tracking-tight text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
-                    {p.normalizedScore}
+                    {p.score}
                   </span>
                 </td>
 
@@ -268,7 +193,7 @@ function HostLeaderboard({ players, onStatistics, onExport, onRestart }: HostLea
                   </div>
                   <div className="flex h-24 w-full flex-col items-center justify-between rounded-t-2xl border-x border-t border-green-300 bg-gradient-to-t from-green-300/80 to-green-50 py-4 shadow-lg shadow-green-200/20 md:h-40 dark:border-green-800 dark:from-green-900/40 dark:to-zinc-900">
                     <div className="mt-2 text-xl font-extrabold text-green-700 md:text-3xl dark:text-green-400">
-                      {top2.normalizedScore}
+                      {top2.score}
                     </div>
                     <Medal className="h-8 w-8 text-green-500 opacity-80 md:h-12 md:w-12" />
                   </div>
@@ -300,7 +225,7 @@ function HostLeaderboard({ players, onStatistics, onExport, onRestart }: HostLea
                   </div>
                   <div className="flex h-32 w-full flex-col items-center justify-between rounded-t-2xl border-x border-t border-orange-400 bg-gradient-to-t from-yellow-300 to-yellow-50 py-6 shadow-xl shadow-orange-200/40 md:h-56 dark:border-orange-800 dark:from-orange-900/60 dark:to-zinc-900">
                     <div className="mt-2 text-3xl font-extrabold text-orange-900 md:text-6xl dark:text-yellow-400">
-                      {top1.normalizedScore}
+                      {top1.score}
                     </div>
                     <Trophy className="h-10 w-10 text-orange-600 opacity-80 md:h-16 md:w-16 dark:text-yellow-600" />
                   </div>
@@ -328,7 +253,7 @@ function HostLeaderboard({ players, onStatistics, onExport, onRestart }: HostLea
                   </div>
                   <div className="flex h-20 w-full flex-col items-center justify-between rounded-t-2xl border-x border-t border-orange-200 bg-gradient-to-t from-orange-200 to-orange-50 py-3 shadow-lg shadow-orange-100/20 md:h-32 dark:border-orange-900 dark:from-orange-950/40 dark:to-zinc-900">
                     <div className="mt-1 text-xl font-extrabold text-orange-900 md:text-3xl dark:text-orange-500">
-                      {top3.normalizedScore}
+                      {top3.score}
                     </div>
                     <Medal className="h-6 w-6 text-orange-500 opacity-80 md:h-10 md:w-10" />
                   </div>
@@ -462,13 +387,12 @@ function PlayerResult({ player, onStatistics }: PlayerResultProps) {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-3">
-              {/* Score - Normalized to max 100 */}
               <div className="rounded-lg bg-orange-50 p-3 text-center dark:bg-zinc-800">
                 <span className="mb-0.5 block text-[10px] font-bold tracking-wider text-orange-800/40 uppercase dark:text-zinc-500">
                   Score
                 </span>
                 <p className="text-2xl font-black text-orange-600 dark:text-orange-400">
-                  {player.normalizedScore}
+                  {player.score}
                 </p>
               </div>
 
@@ -692,7 +616,7 @@ export default function Leaderboard() {
         return [
           index + 1,
           `"${p.name.replace(/"/g, '""')}"`, // Escape quotes
-          p.normalizedScore,
+          p.score,
           p.correctAnswers,
           p.totalQuestions,
           accuracy
@@ -817,8 +741,6 @@ export default function Leaderboard() {
             activeQuestions = activeQuestions.slice(0, questionLimit);
           }
 
-          setQuestions(activeQuestions);
-
           const participants = (session.participants as any[]) || [];
           // Use activeQuestions.length as the definitive total questions count
           const totalQ = activeQuestions.length;
@@ -895,14 +817,8 @@ export default function Leaderboard() {
                   }
                 });
 
-                // Assuming 100 points per correct answer for the raw score
-                const recalculatedScore = recalculatedCorrectCount * 100;
-
                 const correctAns = recalculatedCorrectCount;
-                const rawScore = recalculatedScore;
-
-                // Normalize score to max 100 for display
-                const normalizedScore = totalQ > 0 ? Math.round((correctAns / totalQ) * 100) : 0;
+                const rawScore = Number(p.score) || 0;
 
                 // Calculate Duration for Tie-Breaker
                 let duration = Number.MAX_SAFE_INTEGER; // Default to max so unfinished are last
@@ -920,7 +836,6 @@ export default function Leaderboard() {
                   image: p.avatar || avatarMap[p.user_id] || null,
                   answered: responsesCount,
                   score: rawScore,
-                  normalizedScore,
                   correctAnswers: correctAns,
                   totalQuestions: totalQ,
                   responses: responses,
@@ -1041,10 +956,7 @@ export default function Leaderboard() {
           onStatistics={() => router.push("/stat/" + id)}
         />
       ) : currentPlayer ? (
-        <PlayerResult
-          player={currentPlayer}
-          onStatistics={() => router.push("/stat/" + id)}
-        />
+        <PlayerResult player={currentPlayer} onStatistics={() => router.push("/stat/" + id)} />
       ) : (
         <div className="flex flex-1 items-center justify-center p-4 text-center">
           <div className="max-w-md space-y-4">

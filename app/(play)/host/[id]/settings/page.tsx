@@ -5,8 +5,7 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
   const params = await props.params;
   return generateMeta({
     title: "Host Settings",
-    description:
-      "Settings for the game",
+    description: "Settings for the game",
     canonical: "/host/" + params.id + "/settings"
   });
 }
