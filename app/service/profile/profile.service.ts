@@ -16,6 +16,7 @@ export interface PersonalInfo {
   email: string;
   username: string;
   birthDate: string;
+  isoBirthDate: string;
   grade: string;
   organization: string;
   phone: string;
@@ -27,6 +28,9 @@ export interface AddressInfo {
   country: string;
   state: string;
   city: string;
+  countryId: number | null;
+  stateId: number | null;
+  cityId: number | null;
 }
 
 export interface ProfileData {
@@ -57,6 +61,7 @@ export async function getProfileData(): Promise<ProfileData> {
       email: "",
       username: "",
       birthDate: "",
+      isoBirthDate: "",
       grade: "",
       organization: "",
       phone: "",
@@ -66,7 +71,10 @@ export async function getProfileData(): Promise<ProfileData> {
     address: {
       country: "-",
       state: "-",
-      city: "-"
+      city: "-",
+      countryId: null,
+      stateId: null,
+      cityId: null
     }
   };
 
@@ -89,6 +97,9 @@ export async function getProfileData(): Promise<ProfileData> {
       grade,
       organization,
       gender,
+      country_id,
+      state_id,
+      city_id,
       countries (name),
       states (name),
       cities (name)
@@ -141,6 +152,7 @@ export async function getProfileData(): Promise<ProfileData> {
             year: "numeric"
           })
         : "",
+      isoBirthDate: profileData.birthdate || "",
       grade: profileData.grade || "",
       organization: profileData.organization || "",
       phone: profileData.phone || "",
@@ -150,7 +162,63 @@ export async function getProfileData(): Promise<ProfileData> {
     address: {
       country: (profileData.countries as any)?.name || "-",
       state: (profileData.states as any)?.name || "-",
-      city: (profileData.cities as any)?.name || "-"
+      city: (profileData.cities as any)?.name || "-",
+      countryId: profileData.country_id || null,
+      stateId: profileData.state_id || null,
+      cityId: profileData.city_id || null
     }
   };
+}
+
+export async function updateProfileData(prevState: any, formData: FormData) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    if (!user) return { error: "Authentication required" };
+
+    const fullName = formData.get("fullName") as string;
+    const nickname = formData.get("nickname") as string;
+    const username = formData.get("username") as string;
+    const phone = formData.get("phone") as string;
+    const birthDate = formData.get("birthDate") as string;
+    const grade = formData.get("grade") as string;
+    const organization = formData.get("organization") as string;
+    const gender = formData.get("gender") as string;
+
+    const countryId = formData.get("countryId") as string;
+    const stateId = formData.get("stateId") as string;
+    const cityId = formData.get("cityId") as string;
+
+    const avatarUrl = formData.get("avatarUrl") as string | null;
+
+    const updatePayload: any = {
+      fullname: fullName,
+      nickname,
+      username,
+      phone,
+      birthdate: birthDate || null,
+      grade,
+      organization,
+      gender,
+      updated_at: new Date().toISOString()
+    };
+
+    if (countryId) updatePayload.country_id = parseInt(countryId);
+    if (stateId) updatePayload.state_id = parseInt(stateId);
+    if (cityId) updatePayload.city_id = parseInt(cityId);
+    if (avatarUrl) updatePayload.avatar_url = avatarUrl;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update(updatePayload)
+      .eq("auth_user_id", user.id);
+
+    if (error) return { error: error.message };
+
+    return { success: true, message: "Profile updated successfully!" };
+  } catch (error: any) {
+    return { error: error.message || "Failed to update profile" };
+  }
 }
