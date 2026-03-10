@@ -311,9 +311,16 @@ export function useCreateQuiz() {
 
     setAiGenerating(true);
     try {
-      const response = await fetch("@app/api/ai/generate-questions", {
+      // Get auth token for middleware authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token || "";
+
+      const response = await fetch("/api/ai/generate-questions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
         body: JSON.stringify({
           prompt: aiPrompt,
           language: formData.language,
