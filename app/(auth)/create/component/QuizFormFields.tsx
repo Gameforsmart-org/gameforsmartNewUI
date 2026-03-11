@@ -116,7 +116,7 @@ export function QuizFormFields({ formData, onChange, idPrefix = "quiz" }: QuizFo
               </p>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 {formData.is_public
-                  ? "Quiz dapat ditemukan dan dimainkan oleh siapa saja"
+                  ? "Quiz akan diajukan untuk review dan menjadi publik setelah disetujui"
                   : "Hanya Anda yang bisa melihat quiz ini"}
               </p>
             </div>

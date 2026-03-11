@@ -80,6 +80,7 @@ export interface QuizData {
   description?: string | null;
   creator_id: string;
   is_public: boolean;
+  request?: boolean;
   category?: string | null;
   language?: string | null;
   image_url?: string | null;
@@ -174,6 +175,7 @@ export async function batchInsertQuiz(quizData: QuizData) {
       description: cleanedData.description,
       creator_id: cleanedData.creator_id,
       is_public: cleanedData.is_public,
+      request: cleanedData.request ?? false,
       category: cleanedData.category,
       language: cleanedData.language,
       // Try image_url first, fallback to cover_image for backward compatibility

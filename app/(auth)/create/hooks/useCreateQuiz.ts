@@ -81,6 +81,9 @@ export function useCreateQuiz() {
   const [showValidationDialog, setShowValidationDialog] = useState(false);
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
 
+  // ----- Public Request Dialog -----
+  const [showPublicRequestDialog, setShowPublicRequestDialog] = useState(false);
+
   // ===== Derived pagination values =====
   const totalPages = Math.ceil(questions.length / QUESTIONS_PER_PAGE);
   const startIndex = currentPage * QUESTIONS_PER_PAGE;
@@ -524,13 +527,8 @@ export function useCreateQuiz() {
       return;
     }
 
-    const now = Date.now();
     if (!profileId) {
       toast({ title: "Error", description: "Profile data not loaded. Please refresh the page.", variant: "destructive" });
-      return;
-    }
-    if (now - lastSubmitTime < 2000) {
-      toast({ title: "⚠️ Pelan-pelan", description: "Mohon tunggu sebentar sebelum menyimpan lagi", variant: "default", duration: 2000 });
       return;
     }
     if (isSubmitting || loading) return;
@@ -543,6 +541,28 @@ export function useCreateQuiz() {
       return;
     }
 
+    // If user selected public, show confirmation dialog first
+    if (formData.is_public) {
+      setShowPublicRequestDialog(true);
+      return;
+    }
+
+    // Otherwise, save directly as private
+    await executeSubmit(false);
+  };
+
+  const confirmSubmitAsPublicRequest = async () => {
+    setShowPublicRequestDialog(false);
+    await executeSubmit(true);
+  };
+
+  const executeSubmit = async (isPublicRequest: boolean) => {
+    const now = Date.now();
+    if (now - lastSubmitTime < 2000) {
+      toast({ title: "⚠️ Pelan-pelan", description: "Mohon tunggu sebentar sebelum menyimpan lagi", variant: "default", duration: 2000 });
+      return;
+    }
+
     setLastSubmitTime(now);
     setIsSubmitting(true);
     setLoading(true);
@@ -551,11 +571,12 @@ export function useCreateQuiz() {
       const quizData: QuizData = {
         title: formData.title,
         description: formData.description,
-        is_public: formData.is_public,
+        is_public: false, // Always false — only admin can set to true
+        request: isPublicRequest, // true if user wants public review
         category: formData.category,
         language: formData.language,
         image_url: formData.image_url,
-        creator_id: profileId,
+        creator_id: profileId!,
         questions: questions.map((q) => ({
           question_text: q.question,
           image_url: q.image,
@@ -572,15 +593,20 @@ export function useCreateQuiz() {
 
       await batchInsertQuiz(quizData);
 
-      toast({ title: t("common.success"), description: t("createQuiz.generate.messages.quizCreatedSuccess") });
+      if (isPublicRequest) {
+        toast({
+          title: t("common.success"),
+          description: "Quiz berhasil disimpan! Quiz akan menjadi publik setelah disetujui oleh tim support.",
+          duration: 5000,
+        });
+      } else {
+        toast({ title: t("common.success"), description: t("createQuiz.generate.messages.quizCreatedSuccess") });
+      }
 
       // Invalidate caches
       try {
         const { queryKeys: qKeys } = await import("@/lib/query-config");
         await queryClient.invalidateQueries({ queryKey: qKeys.myQuizzes(user?.id || "") });
-        if (formData.is_public) {
-          await queryClient.invalidateQueries({ queryKey: ["quizzes", "public"] });
-        }
       } catch {
         // skip if cache not available
       }
@@ -652,6 +678,11 @@ export function useCreateQuiz() {
     setShowValidationDialog,
     validationIssues,
     handleFixValidation,
+
+    // Public Request
+    showPublicRequestDialog,
+    setShowPublicRequestDialog,
+    confirmSubmitAsPublicRequest,
 
     // Submit
     handleSubmit,

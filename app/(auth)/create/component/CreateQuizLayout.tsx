@@ -25,7 +25,7 @@ import { GenerateStep } from "./steps/GenerateStep";
 import { ImportStep } from "./steps/ImportStep";
 import { QuestionsStep } from "./steps/QuestionsStep";
 import { PreviewStep } from "./steps/PreviewStep";
-import { ValidationDialog, QuotaExceededDialog } from "./QuizDialogs";
+import { ValidationDialog, QuotaExceededDialog, PublicRequestDialog } from "./QuizDialogs";
 import { useCreateQuiz } from "../hooks/useCreateQuiz";
 import type { CreationMethod } from "../types";
 
@@ -490,7 +490,7 @@ export function CreateQuizLayout() {
               />
               <SummaryRow
                 label="Visibilitas"
-                value={quiz.formData.is_public ? "Publik" : "Privat"}
+                value={quiz.formData.is_public ? "Menunggu Review" : "Privat"}
               />
             </div>
 
@@ -540,6 +540,11 @@ export function CreateQuizLayout() {
       <QuotaExceededDialog
         open={quiz.showQuotaExceededDialog}
         onOpenChange={quiz.setShowQuotaExceededDialog}
+      />
+      <PublicRequestDialog
+        open={quiz.showPublicRequestDialog}
+        onOpenChange={quiz.setShowPublicRequestDialog}
+        onConfirm={quiz.confirmSubmitAsPublicRequest}
       />
     </div>
   );

@@ -9,7 +9,7 @@ import {
   DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, XCircle, ArrowRight } from "lucide-react";
+import { AlertTriangle, XCircle, ArrowRight, Globe, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ValidationIssue } from "../types";
 
@@ -110,6 +110,79 @@ export function QuotaExceededDialog({ open, onOpenChange }: QuotaExceededDialogP
             className="w-full text-xs bg-zinc-900 hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 text-white"
           >
             Mengerti
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---- Public Request Confirmation Dialog ----
+
+interface PublicRequestDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+}
+
+export function PublicRequestDialog({ open, onOpenChange, onConfirm }: PublicRequestDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-sm font-semibold">
+            <div className="w-7 h-7 rounded-md bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+              <Globe className="w-3.5 h-3.5 text-blue-500" />
+            </div>
+            Permintaan Quiz Publik
+          </DialogTitle>
+          <DialogDescription className="text-xs leading-relaxed mt-2">
+            Quiz Anda akan disimpan sebagai <span className="font-semibold text-zinc-800 dark:text-zinc-200">privat</span> terlebih dahulu dan menunggu persetujuan.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 mt-2">
+          <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-4 py-3">
+            <div className="flex items-start gap-2.5">
+              <ShieldCheck className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-blue-800 dark:text-blue-300">
+                  Proses Review
+                </p>
+                <ul className="space-y-1 text-xs text-blue-700 dark:text-blue-400">
+                  <li className="flex items-start gap-1.5">
+                    <span className="mt-1.5 w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
+                    Quiz akan direview oleh tim support kami
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="mt-1.5 w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
+                    Setelah disetujui, quiz akan tampil secara publik
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="mt-1.5 w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
+                    Anda akan mendapat notifikasi saat quiz disetujui
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Hal ini dilakukan untuk memastikan konten quiz sesuai dengan pedoman komunitas kami.
+          </p>
+        </div>
+
+        <DialogFooter className="mt-4 gap-2">
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="text-xs">
+            Batal
+          </Button>
+          <Button
+            size="sm"
+            onClick={onConfirm}
+            className="gap-1.5 text-xs bg-zinc-900 hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 text-white"
+          >
+            <Globe className="w-3.5 h-3.5" />
+            Ajukan sebagai Publik
           </Button>
         </DialogFooter>
       </DialogContent>
