@@ -244,11 +244,11 @@ export function DashboardContent({
   };
 
   const handleEditClick = (quizId: string) => {
-    router.push(`/quiz/${quizId}/edit`);
+    router.push(`/edit/${quizId}`);
   };
 
   const handleAnalyticClick = (quizId: string) => {
-    router.push(`/quiz/${quizId}/analytic`);
+    router.push(`/analytic/${quizId}`);
   };
 
   // Favorite Logic

@@ -62,7 +62,7 @@ export function GenerateStep({
             )}>
               {userQuota.remainingTokens}
             </span>
-            <span>/ 2 token hari ini</span>
+            <span>/ 2 token today</span>
           </div>
         </div>
 
