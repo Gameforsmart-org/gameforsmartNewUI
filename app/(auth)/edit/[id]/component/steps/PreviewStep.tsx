@@ -115,7 +115,7 @@ export function PreviewStep({ quiz, categories, languages }: PreviewStepProps) {
                 )}
               >
                 {quiz.is_public ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                {quiz.is_public ? t("editQuiz.preview.public") : t("editQuiz.preview.private")}
+                {quiz.is_public ? "Public" : "Private"}
               </Badge>
             </div>
           </div>

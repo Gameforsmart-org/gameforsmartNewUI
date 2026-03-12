@@ -1,6 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { clientEnv, validateClientEnv } from "./env-config";
-import type { Database } from "./supabase";
+import type { Database } from "./database.types";
 
 // Validate environment configuration
 const envValidation = validateClientEnv();

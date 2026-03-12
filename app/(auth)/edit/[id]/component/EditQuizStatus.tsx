@@ -24,7 +24,7 @@ export function LoadingState({
       <div className="text-center">
         <div className="w-10 h-10 border-2 border-zinc-200 border-t-zinc-900 dark:border-zinc-700 dark:border-t-zinc-100 rounded-full animate-spin mx-auto mb-4" />
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {authLoading ? t("editQuiz.messages.loadingAuth") : t("editQuiz.messages.loadingQuiz")}
+          {authLoading ? "Loading authentication..." : "Loading quiz..."}
         </p>
         {savingProgress && (
           <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2">{savingProgress}</p>
