@@ -85,7 +85,7 @@ function HostLeaderboard({ players, onStatistics, onExport, onRestart }: HostLea
               Score
             </th>
             <th className="px-4 py-4 text-right text-[10px] font-bold tracking-widest text-zinc-500 uppercase dark:text-zinc-400">
-              Duration
+              Time
             </th>
           </tr>
         </thead>

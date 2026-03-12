@@ -1,0 +1,72 @@
+"use client";
+
+// ============================================================
+// components/DashboardContent.tsx
+//
+// Client Component utama yang dirakit dari sub-komponen.
+// Hanya mengelola wiring antara hook dan komponen UI —
+// tidak ada logika bisnis atau Supabase langsung di sini.
+// ============================================================
+
+import { useDashboard } from "../hooks/useDashboard";
+import { DashboardHeader } from "./DashboardHeader";
+import { DashboardTabs } from "./DashboardTabs";
+import type { Category, Quiz } from "./types";
+
+interface DashboardContentProps {
+  publicQuizzes:    Quiz[];
+  myQuizzes:        Quiz[];
+  favoriteQuizzes:  Quiz[];
+  categories:       Category[];
+  currentProfileId?: string;
+}
+
+export function DashboardContent({
+  publicQuizzes,
+  myQuizzes,
+  favoriteQuizzes,
+  categories,
+  currentProfileId
+}: DashboardContentProps) {
+  const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c]));
+
+  const {
+    activeTab, setActiveTab,
+    searchInputValue, setSearchInputValue, searchInputRef,
+    selectedCategory, handleFilterChange, handleSearchSubmit,
+    pageState, handlePageChange, getPaginatedQuizzes,
+    filteredPublic, filteredMy, filteredFavorite,
+    handleHostClick, handleEditClick, handleAnalyticClick, handleToggleFavorite
+  } = useDashboard(publicQuizzes, myQuizzes, favoriteQuizzes, currentProfileId);
+
+  return (
+    <div className="space-y-4">
+      <DashboardHeader
+        categories={categories}
+        categoryMap={categoryMap}
+        selectedCategory={selectedCategory}
+        searchInputValue={searchInputValue}
+        searchInputRef={searchInputRef}
+        onCategoryChange={(id) => handleFilterChange("category", id)}
+        onSearchChange={setSearchInputValue}
+        onSearchSubmit={handleSearchSubmit}
+      />
+
+      <DashboardTabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        filteredPublic={filteredPublic}
+        filteredMy={filteredMy}
+        filteredFavorite={filteredFavorite}
+        categoryMap={categoryMap}
+        pageState={pageState}
+        onPageChange={handlePageChange}
+        getPaginatedQuizzes={getPaginatedQuizzes}
+        onHost={handleHostClick}
+        onEdit={handleEditClick}
+        onAnalytic={handleAnalyticClick}
+        onToggleFavorite={handleToggleFavorite}
+      />
+    </div>
+  );
+}
