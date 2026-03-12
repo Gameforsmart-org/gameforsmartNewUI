@@ -252,7 +252,7 @@ export async function deleteQuestionFromDb(questionId: string): Promise<void> {
  *
  * Mengembalikan { success: true } atau { success: false, error }
  */
-export async function saveQuiz(quiz: Quiz): Promise<SaveQuizResult> {
+export async function saveQuiz(quiz: Quiz, isPublicRequest: boolean = false): Promise<SaveQuizResult> {
   try {
     // Step 1 – field dasar
     const { error: infoError } = await supabase
@@ -262,7 +262,8 @@ export async function saveQuiz(quiz: Quiz): Promise<SaveQuizResult> {
         description: quiz.description,
         category: quiz.category,
         language: quiz.language,
-        is_public: quiz.is_public,
+        is_public: isPublicRequest ? false : quiz.is_public, // Always false if requesting public
+        request: isPublicRequest, // true if user wants public review
         image_url: quiz.image_url,
         updated_at: new Date().toISOString(),
       })

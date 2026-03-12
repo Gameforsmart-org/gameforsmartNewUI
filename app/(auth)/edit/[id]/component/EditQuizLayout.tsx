@@ -28,6 +28,7 @@ import {
   DeleteQuestionDialog,
   DeleteAnswerDialog,
   SavingOverlay,
+  PublicRequestDialog,
 } from "./EditQuizDialogs";
 import type { useEditQuiz } from "../hooks/useEditQuiz";
 
@@ -168,7 +169,7 @@ export function EditQuizLayout({ editQuiz: q }: EditQuizLayoutProps) {
             )}
           >
             {quiz.is_public ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-            {quiz.is_public ? "Publik" : "Privat"}
+            {quiz.is_public ? "Menunggu Review" : "Privat"}
           </Badge>
 
           <div className="flex-1" />
@@ -368,7 +369,7 @@ export function EditQuizLayout({ editQuiz: q }: EditQuizLayoutProps) {
                 value={quiz.questions.length > 0 ? `${quiz.questions.length} soal` : "—"}
                 highlight={quiz.questions.length > 0}
               />
-              <SidebarRow label="Visibilitas" value={quiz.is_public ? "Publik" : "Privat"} />
+              <SidebarRow label="Visibilitas" value={quiz.is_public ? "Menunggu Review" : "Privat"} />
             </div>
 
             {/* Unsaved hint */}
@@ -425,6 +426,11 @@ export function EditQuizLayout({ editQuiz: q }: EditQuizLayoutProps) {
         onConfirm={q.confirmDeleteAnswer}
       />
       <SavingOverlay saving={q.saving} savingProgress={q.savingProgress} />
+      <PublicRequestDialog
+        open={q.showPublicRequestDialog}
+        onOpenChange={q.setShowPublicRequestDialog}
+        onConfirm={q.confirmSaveAsPublicRequest}
+      />
     </div>
   );
 }

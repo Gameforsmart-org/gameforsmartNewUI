@@ -124,7 +124,7 @@ export function InfoStep({ quiz, categories, languages, onUpdate }: InfoStepProp
                   </p>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     {quiz.is_public
-                      ? "Quiz can be found and played by anyone"
+                      ? "Quiz akan diajukan untuk review dan menjadi publik setelah disetujui"
                       : "Only you can see this quiz"}
                   </p>
                 </div>

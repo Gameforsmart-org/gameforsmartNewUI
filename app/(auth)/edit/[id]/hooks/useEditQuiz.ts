@@ -46,6 +46,7 @@ export function useEditQuiz(quizId: string) {
 
   // ── Dialog state ──────────────────────────────────────────
   const [showSaveConfirm,              setShowSaveConfirm]              = useState(false);
+  const [showPublicRequestDialog,      setShowPublicRequestDialog]      = useState(false);
   const [showDeleteQuestionConfirm,    setShowDeleteQuestionConfirm]    = useState(false);
   const [questionToDelete,             setQuestionToDelete]             = useState<string | null>(null);
   const [skipQuestionDeleteConfirmation, setSkipQuestionDeleteConfirmation] = useState(false);
@@ -298,24 +299,50 @@ export function useEditQuiz(quizId: string) {
   // ── Save ──────────────────────────────────────────────────
   const handleSaveClick = () => {
     if (!quiz || !user) return;
+
+    // If user toggled visibility to public, show request dialog instead
+    if (quiz.is_public) {
+      setShowPublicRequestDialog(true);
+      return;
+    }
+
     setShowSaveConfirm(true);
   };
 
+  const confirmSaveAsPublicRequest = async () => {
+    setShowPublicRequestDialog(false);
+    await executeSave(true);
+  };
+
   const saveQuiz = async () => {
-    if (!quiz || !user) return;
     setShowSaveConfirm(false);
+    await executeSave(false);
+  };
+
+  const executeSave = async (isPublicRequest: boolean) => {
+    if (!quiz || !user) return;
     setSaving(true);
     setSavingProgress("Menyimpan informasi quiz...");
 
     try {
       setSavingProgress("Memproses semua pertanyaan dan jawaban...");
 
-      const result = await svcSaveQuiz(quiz);
+      const result = await svcSaveQuiz(quiz, isPublicRequest);
       if (!result.success) throw new Error(result.error);
 
       setSavingProgress("Selesai!");
       setDeletedAnswerIds([]);
-      toast({ title: "Success", description: t("editQuiz.messages.saved") });
+
+      if (isPublicRequest) {
+        toast({
+          title: "Success",
+          description: "Quiz berhasil disimpan! Quiz akan menjadi publik setelah disetujui oleh tim support.",
+          duration: 5000,
+        });
+      } else {
+        toast({ title: "Success", description: t("editQuiz.messages.saved") });
+      }
+
       router.push("/dashboard");
     } catch (error: any) {
       console.error("[useEditQuiz] saveQuiz failed:", error);
@@ -345,6 +372,7 @@ export function useEditQuiz(quizId: string) {
     setSelectedQuestionIndex,
     // dialogs
     showSaveConfirm,              setShowSaveConfirm,
+    showPublicRequestDialog,      setShowPublicRequestDialog,
     showDeleteQuestionConfirm,    setShowDeleteQuestionConfirm,
     skipQuestionDeleteConfirmation, setSkipQuestionDeleteConfirmation,
     showDeleteAnswerConfirm,      setShowDeleteAnswerConfirm,
@@ -360,5 +388,6 @@ export function useEditQuiz(quizId: string) {
     removeAnswer,    confirmDeleteAnswer,
     handleSaveClick,
     saveQuiz,
+    confirmSaveAsPublicRequest,
   };
 }
