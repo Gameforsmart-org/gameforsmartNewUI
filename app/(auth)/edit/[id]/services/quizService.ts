@@ -255,18 +255,25 @@ export async function deleteQuestionFromDb(questionId: string): Promise<void> {
 export async function saveQuiz(quiz: Quiz, isPublicRequest: boolean = false): Promise<SaveQuizResult> {
   try {
     // Step 1 – field dasar
+    // Build update payload — only include `request` when user explicitly
+    // requests public, so we don't accidentally reset a pending review
+    const updatePayload: Record<string, unknown> = {
+      title: quiz.title,
+      description: quiz.description,
+      category: quiz.category,
+      language: quiz.language,
+      is_public: isPublicRequest ? false : quiz.is_public,
+      image_url: quiz.image_url,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (isPublicRequest) {
+      updatePayload.request = true;
+    }
+
     const { error: infoError } = await supabase
       .from("quizzes")
-      .update({
-        title: quiz.title,
-        description: quiz.description,
-        category: quiz.category,
-        language: quiz.language,
-        is_public: isPublicRequest ? false : quiz.is_public, // Always false if requesting public
-        request: isPublicRequest, // true if user wants public review
-        image_url: quiz.image_url,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq("id", quiz.id);
 
     if (infoError) throw infoError;

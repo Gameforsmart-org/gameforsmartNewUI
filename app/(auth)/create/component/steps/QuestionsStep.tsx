@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/hooks/use-i18n";
-import { uploadImage } from "@/lib/upload-image";
 import { ANSWER_COLORS, QUESTIONS_PER_PAGE } from "../../utils/constants";
 import type { Question, CreationMethod, AiOptions } from "../../types";
 import CompactImageUpload from "@/components/ui/compact-image-upload";
@@ -50,8 +49,12 @@ function AnswerCard({ answerId, answerIndex, answerText, answerImage, isCorrect,
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         try {
-          const url = await uploadImage(file);
-          onUpdate(questionId, answerId, "image", url);
+          // Store as data URL preview — actual upload happens on Save
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            onUpdate(questionId, answerId, "image", reader.result as string);
+          };
+          reader.readAsDataURL(file);
         } catch (err) {
           console.error(err);
         }
@@ -59,6 +62,8 @@ function AnswerCard({ answerId, answerIndex, answerText, answerImage, isCorrect,
     };
     input.click();
   };
+
+  const isDataUrl = answerImage?.startsWith("data:");
 
   return (
     <div
@@ -112,7 +117,12 @@ function AnswerCard({ answerId, answerIndex, answerText, answerImage, isCorrect,
       {answerImage && (
         <div className="px-3 pb-3">
           <div className="relative w-full h-16 rounded-md overflow-hidden border border-zinc-200 dark:border-zinc-700">
-            <Image src={answerImage} alt={`Answer ${label}`} fill className="object-cover" />
+            {isDataUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={answerImage} alt={`Answer ${label}`} className="object-cover w-full h-full" />
+            ) : (
+              <Image src={answerImage} alt={`Answer ${label}`} fill className="object-cover" />
+            )}
             <button
               type="button"
               onClick={() => onUpdate(questionId, answerId, "image", null)}

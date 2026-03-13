@@ -568,6 +568,52 @@ export function useCreateQuiz() {
     setLoading(true);
 
     try {
+      // ── Upload all pending data URL images ──
+      const { uploadImage } = await import("@/lib/upload-image");
+
+      // Helper: upload a data URL to Supabase, returns public URL
+      const uploadDataUrl = async (dataUrl: string): Promise<string | null> => {
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        const file = new File([blob], `image_${Date.now()}.webp`, { type: blob.type });
+        return uploadImage(file);
+      };
+
+      // Process all question & answer images
+      const processedQuestions = await Promise.all(
+        questions.map(async (q) => {
+          // Upload question image if it's a data URL
+          let questionImageUrl = q.image;
+          if (questionImageUrl?.startsWith("data:")) {
+            questionImageUrl = await uploadDataUrl(questionImageUrl);
+          }
+
+          // Upload answer images if they are data URLs
+          const processedAnswers = await Promise.all(
+            q.answers.map(async (a, index) => {
+              let answerImageUrl = a.image;
+              if (answerImageUrl?.startsWith("data:")) {
+                answerImageUrl = await uploadDataUrl(answerImageUrl);
+              }
+              return {
+                answer_text: a.answer,
+                is_correct: q.correct === a.id,
+                color: ANSWER_COLORS[index],
+                order_index: index,
+                image_url: answerImageUrl,
+              };
+            })
+          );
+
+          return {
+            question_text: q.question,
+            image_url: questionImageUrl,
+            question_type: q.type,
+            answers: processedAnswers,
+          };
+        })
+      );
+
       const quizData: QuizData = {
         title: formData.title,
         description: formData.description,
@@ -577,18 +623,7 @@ export function useCreateQuiz() {
         language: formData.language,
         image_url: formData.image_url,
         creator_id: profileId!,
-        questions: questions.map((q) => ({
-          question_text: q.question,
-          image_url: q.image,
-          question_type: q.type,
-          answers: q.answers.map((a, index) => ({
-            answer_text: a.answer,
-            is_correct: q.correct === a.id,
-            color: ANSWER_COLORS[index],
-            order_index: index,
-            image_url: a.image,
-          })),
-        })),
+        questions: processedQuestions,
       };
 
       await batchInsertQuiz(quizData);
