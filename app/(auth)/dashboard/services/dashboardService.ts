@@ -107,7 +107,7 @@ export async function fetchDashboardData(
     currentProfileId,
     publicQuizzes:   allQuizzes.filter((q) => q._raw?.isPublic === true),
     myQuizzes:       allQuizzes.filter(
-      (q) => q._raw?.isPublic === false && q._raw?.creatorId === currentProfileId
+      (q) => q._raw?.creatorId === currentProfileId
     ),
     favoriteQuizzes: allQuizzes.filter((q) => q._raw?.isFavorite === true)
   };

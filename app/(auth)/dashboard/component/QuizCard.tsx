@@ -22,7 +22,9 @@ import {
   Trash,
   CircleOff,
   User,
-  Pencil
+  Pencil,
+  Globe,
+  Lock
 } from "lucide-react";
 import type { Quiz, Category } from "./types";
 import { categoryIconMap } from "./quiz-icons";
@@ -56,14 +58,14 @@ export function QuizCard({
         {/* Badges + konteks menu */}
         <div className="flex items-center justify-between">
           <div className="flex gap-1">
-            <span className="rounded-lg border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-bold text-green-700 uppercase dark:border-green-700 dark:bg-green-900/30 dark:text-green-500">
+            <span title="Category" className="rounded-lg border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-bold text-green-700 uppercase dark:border-green-700 dark:bg-green-900/30 dark:text-green-500">
               {category?.title ?? "Umum"}
             </span>
-            <span className="rounded-lg border border-yellow-200 bg-yellow-50 px-2 py-0.5 text-xs font-bold text-yellow-700 uppercase dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-500">
+            <span title="Language" className="rounded-lg border border-yellow-200 bg-yellow-50 px-2 py-0.5 text-xs font-bold text-yellow-700 uppercase dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-500">
               {quiz.language}
             </span>
             <span className="rounded-lg border border-yellow-200 bg-yellow-50 px-2 py-0.5 text-xs font-bold text-yellow-700 uppercase dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-500">
-              {quiz._raw?.isPublic ? "Public" : "Private"}
+              {quiz._raw?.isPublic ? <Globe size={16}/> : <Lock size={16}/>}
             </span>
           </div>
 
@@ -117,7 +119,7 @@ export function QuizCard({
         {/* Judul */}
         {isMyQuiz ? (
           <h2
-            className="line-clamp-1 text-lg font-bold text-zinc-800 dark:text-zinc-300"
+            className="line-clamp-1 text-lg font-bold text-zinc-800 dark:text-zinc-300 cursor-pointer"
             title={quiz.title}
             onClick={() => onAnalytic(quiz.id)}>
             {quiz.title}
