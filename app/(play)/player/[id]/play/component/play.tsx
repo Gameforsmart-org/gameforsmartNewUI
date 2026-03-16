@@ -16,7 +16,6 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Flag, Timer, Loader2 } from "lucide-react";
-import Image from "next/image";
 import { toast } from "sonner";
 import {
   getGameSessionRT,
@@ -673,6 +672,16 @@ export default function Play({ sessionId }: PlayProps) {
                         </Button>
                       </div>
                       <div className="mt-4 text-lg">{currentQuestion.question}</div>
+                      {/* Question Image */}
+                      {currentQuestion.image && (
+                        <div className="mt-3 overflow-hidden rounded-lg border border-slate-200">
+                          <img
+                            src={currentQuestion.image}
+                            alt={`Question ${currentQuestionIndex + 1}`}
+                            className="w-full max-h-60 object-contain bg-slate-50"
+                          />
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
 
@@ -714,7 +723,14 @@ export default function Play({ sessionId }: PlayProps) {
                         });
                       }
 
-                      return displayOptions.map((item, idx) => (
+                      return displayOptions.map((item, idx) => {
+                        // Find the original answer to get its image
+                        const originalAnswer = Array.isArray(currentQuestion.answers)
+                          ? currentQuestion.answers.find((a) => a.id === item.id)
+                          : null;
+                        const answerImage = originalAnswer?.image || null;
+
+                        return (
                         <div
                           key={item.id}
                           onClick={() => handleAnswer(item.id)}
@@ -734,10 +750,23 @@ export default function Play({ sessionId }: PlayProps) {
                               )}>
                               {String.fromCharCode(65 + idx)}
                             </div>
-                            <div className="pt-1">{item.text || item.key}</div>
+                            <div className="flex-1">
+                              <div className="pt-1">{item.text}</div>
+                              {/* Answer Image */}
+                              {answerImage && (
+                                <div className="mt-2 overflow-hidden rounded-md border border-slate-200">
+                                  <img
+                                    src={answerImage}
+                                    alt={`Answer ${String.fromCharCode(65 + idx)}`}
+                                    className="w-full max-h-32 object-contain bg-slate-50"
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      ));
+                      );
+                      });
                     })()}
                   </section>
                 </>

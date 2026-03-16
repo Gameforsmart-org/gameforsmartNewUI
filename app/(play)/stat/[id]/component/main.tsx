@@ -26,12 +26,14 @@ interface Question {
   id: string;
   question: string;
   correct?: string;
+  image?: string | null;
   answers: {
     id: string;
     text?: string;
     answer?: string;
     option?: string;
     label?: string;
+    image?: string | null;
     isCorrect?: boolean;
   }[];
 }
@@ -387,7 +389,9 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
                           </Badge>
                           {isHost && stats && (
                             <>
-                              <Badge variant="secondary" className="rounded-md border-orange-100 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700 hover:bg-orange-100">
+                              <Badge
+                                variant="secondary"
+                                className="rounded-md border-orange-100 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700 hover:bg-orange-100">
                                 <span>{stats.percentCorrect}%</span> |
                                 <span>{stats.correctCount} correct</span> |
                                 <span>{stats.incorrectCount} incorrect</span>
@@ -447,9 +451,21 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
                         </div>
                       </div>
                       {!isCollapsed && (
-                        <h3 className="text-base leading-relaxed font-medium text-slate-800">
-                          {q.question}
-                        </h3>
+                        <>
+                          <h3 className="text-base leading-relaxed font-medium text-slate-800">
+                            {q.question}
+                          </h3>
+                          {/* Question Image */}
+                          {q.image && (
+                            <div className="mt-2 overflow-hidden rounded-lg border border-slate-200">
+                              <img
+                                src={q.image}
+                                alt={`Question ${index + 1}`}
+                                className="max-h-52 w-full bg-slate-50 object-contain"
+                              />
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
 
@@ -472,26 +488,38 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
                                 <div
                                   key={ans.id || idx}
                                   className={cn(
-                                    "relative flex items-center gap-3 rounded-md border p-3 text-sm transition-colors",
+                                    "relative rounded-md border p-3 text-sm transition-colors",
                                     isCorrect
                                       ? "border-green-200 bg-green-50 text-green-900 ring-1 ring-green-100"
                                       : "border-slate-200 bg-white text-slate-600"
                                   )}>
-                                  <span
-                                    className={cn(
-                                      "flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-bold",
-                                      isCorrect
-                                        ? "bg-green-200 text-green-800"
-                                        : "bg-slate-100 text-slate-500"
-                                    )}>
-                                    {optionLabel}
-                                  </span>
-                                  <span className="flex-1 leading-tight font-medium">
-                                    {answerText}
-                                  </span>
+                                  <div className="flex items-center gap-3">
+                                    <span
+                                      className={cn(
+                                        "flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-bold",
+                                        isCorrect
+                                          ? "bg-green-200 text-green-800"
+                                          : "bg-slate-100 text-slate-500"
+                                      )}>
+                                      {optionLabel}
+                                    </span>
+                                    <span className="flex-1 leading-tight font-medium">
+                                      {answerText}
+                                    </span>
 
-                                  {isCorrect && (
-                                    <CheckCircle2 className="absolute right-3 h-4 w-4 text-green-600" />
+                                    {isCorrect && (
+                                      <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
+                                    )}
+                                  </div>
+                                  {/* Answer Image */}
+                                  {ans.image && (
+                                    <div className="mt-2 ml-9 overflow-hidden rounded-md border border-slate-200">
+                                      <img
+                                        src={ans.image}
+                                        alt={`Answer ${optionLabel}`}
+                                        className="max-h-32 w-full bg-slate-50 object-contain"
+                                      />
+                                    </div>
                                   )}
                                 </div>
                               );
@@ -533,21 +561,44 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
                               <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-red-600 uppercase">
                                 <XCircle className="h-3.5 w-3.5" /> Your Answer:
                               </span>
-                              <p className="mt-0.5 pl-5 font-medium text-red-700">
+                              <div className="mt-0.5 pl-5 font-medium text-red-700">
                                 {(() => {
                                   const userAns = q.answers.find(
                                     (a) =>
                                       String(a.id).trim() === String(myStatus?.userAnswerId).trim()
                                   );
-                                  return userAns
-                                    ? userAns.text ||
-                                        userAns.answer ||
-                                        userAns.option ||
-                                        userAns.label ||
-                                        "Answer ID match but no text"
-                                    : "No answer";
+
+                                  if (!userAns) return "No answer";
+
+                                  if (
+                                    userAns.text ||
+                                    userAns.answer ||
+                                    userAns.option ||
+                                    userAns.label
+                                  ) {
+                                    return (
+                                      userAns.text ||
+                                      userAns.answer ||
+                                      userAns.option ||
+                                      userAns.label
+                                    );
+                                  }
+
+                                  if (userAns.image) {
+                                    return (
+                                      <div className="mt-2 ml-9 overflow-hidden rounded-md border border-slate-200">
+                                        <img
+                                          src={userAns.image}
+                                          alt={`Answer ${userAns.text}`}
+                                          className="max-h-32 w-full bg-slate-50 object-contain"
+                                        />
+                                      </div>
+                                    );
+                                  }
+
+                                  return "Answer ID match but no text";
                                 })()}
-                              </p>
+                              </div>
                             </div>
                           </div>
                         )}
