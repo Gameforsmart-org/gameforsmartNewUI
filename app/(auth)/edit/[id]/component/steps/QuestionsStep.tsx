@@ -142,7 +142,7 @@ function QuestionNavigator({
   const { t } = useI18n();
 
   const completedCount = questions.filter(
-    (q) => q.text.trim().length > 0 && q.answers.some((_, i) => q.correct === i.toString())
+    (q) => q.text.trim().length > 0 && (q.answers.some((_, i) => q.correct === i.toString()) || q.image_url)
   ).length;
 
   return (
@@ -169,7 +169,7 @@ function QuestionNavigator({
           {questions.map((question, index) => {
             const isAnswered =
               question.text.trim().length > 0 &&
-              question.answers.some((_, i) => question.correct === i.toString());
+              (question.answers.some((_, i) => question.correct === i.toString()) || question.image_url);
             const isCurrent = selectedIndex === index;
 
             return (
