@@ -183,7 +183,7 @@ export default function LoginForm() {
               src="/gameforsmartlogo.png"
               alt="Logo"
               className="h-full w-11/12 cursor-pointer px-8 dark:brightness-90"
-              onClick={() => router.push("https://gameforsmart.com")}
+              onClick={() => router.push("https://gameforsmartnewui.vercel.app")}
             />
           </div>
         </CardHeader>

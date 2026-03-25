@@ -12,6 +12,7 @@ export interface ProfileData {
   auth_user_id: string;
   username: string;
   fullname: string | null;
+  nickname: string | null;
   avatar_url: string | null;
   role: string | null;
   language: string | null;
