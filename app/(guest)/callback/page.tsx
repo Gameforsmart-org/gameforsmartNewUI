@@ -10,6 +10,7 @@ function AuthCallbackPageContent() {
   const [status, setStatus] = useState("Memproses login...");
   const [isError, setIsError] = useState(false);
 
+  
   useEffect(() => {
     // Proses callback OAuth dari provider
     const handleAuthCallback = async () => {
