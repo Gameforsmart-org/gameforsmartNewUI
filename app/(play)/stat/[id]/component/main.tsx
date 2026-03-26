@@ -3,7 +3,6 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -21,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/auth-context";
 
 interface Question {
   id: string;
@@ -52,6 +52,7 @@ interface PlayerWithResponses {
 export default function StatisticsPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const id = resolvedParams.id;
+  const { user } = useAuth();
 
   const router = useRouter();
 
@@ -62,6 +63,14 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
   const [currentPlayerId, setCurrentPlayerId] = useState<string | undefined>();
   const [isCollapsedAll, setIsCollapsedAll] = useState(false);
   const [collapsedItems, setCollapsedItems] = useState<Record<string, boolean>>({});
+
+   useEffect(() => {
+    if (loading) return;
+    if(!user){
+      router.push("/login?redirect=/stat/" + id);
+    }
+
+  }, [user, loading, router]);
 
   const toggleCollapseAll = () => {
     const newState = !isCollapsedAll;
@@ -86,6 +95,11 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
 
         let profileId: string | null = null;
         let userRole: string | null = null;
+
+        // if (!user) {
+        //   router.push("/login?redirect=/stat/" + id);
+        //   return;
+        // }
 
         if (user) {
           const { data: profile } = await supabase

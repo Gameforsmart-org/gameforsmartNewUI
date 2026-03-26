@@ -1,35 +1,26 @@
-import React from "react";
-import { LandingHeader } from "@/components/landing/header";
-import { Hero } from "@/components/landing/hero";
-import { Features } from "@/components/landing/features";
-import { Footer } from "@/components/landing/footer";
-import { generateMeta } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { CTA } from "@/components/landing/cta";
-import { AuthSection } from "@/components/landing/auth-section";
-import { AuthCodeSafetyNet } from "@/components/auth/auth-code-safety-net";
+"use client";
 
-export async function generateMetadata() {
-    return generateMeta({
-        title: "GameForSmart - Create Interactive AI Quizzes",
-        description: "Transform your teaching with AI-powered quiz creation, real-time multiplayer games, and comprehensive analytics.",
-        canonical: "/"
-    });
-}
+import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function LandingPage() {
-    return (
-        <div className="flex flex-col min-h-screen">
-            <AuthCodeSafetyNet />
-            <LandingHeader />
-            <main className="flex-grow">
-                <Hero />
-                <Features />
-                <AuthSection />
-                <CTA />
-            </main>
-            <Footer />
-        </div>
-    );
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+
+    router.replace(user ? "/dashboard" : "/login");
+  }, [user, loading, router]);
+
+  return <Loading/>;
+}
+
+export function Loading() {
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-blue-500"></div>
+    </div>
+  );
 }
