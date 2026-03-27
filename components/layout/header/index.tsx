@@ -10,6 +10,7 @@ import UserMenu from "@/components/layout/header/user-menu";
 import { ThemeCustomizerPanel } from "@/components/theme-customizer";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
+import NotificationBell from "./NotificationBell";
 
 export function SiteHeader() {
   const { toggleSidebar } = useSidebar();
@@ -22,7 +23,7 @@ export function SiteHeader() {
         </Button>
 
         <div className="ml-auto flex items-center gap-2">
-          <Notifications />
+          <NotificationBell />
           <ThemeSwitch />
           <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
           <UserMenu />

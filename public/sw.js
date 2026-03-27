@@ -15,11 +15,11 @@ self.addEventListener('push', (event) => {
 
   try {
     const data = event.data.json();
-    
+
     const options = {
       body: data.body || '',
-      icon: data.icon || '/gameforsmartlogo.png',
-      badge: '/gameforsmartlogo.png',
+      icon: data.icon || '/logo.png',
+      badge: '/logo.png',
       vibrate: [100, 50, 100],
       data: {
         url: data.data?.url || '/',
@@ -38,15 +38,42 @@ self.addEventListener('push', (event) => {
   }
 });
 
-// Handle notification click
+// Handle notification click (body click or action button click)
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  const url = event.notification.data?.url || '/';
-  
+  const notifData = event.notification.data || {};
+  const action = event.action; // "accept", "decline", or "" (body click)
+
+  // ── Action button clicked ──
+  if (action === 'accept' || action === 'decline') {
+    // Open the notifications page where user can complete the action
+    const notificationsUrl = '/notifications';
+
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        // If a window is already open, navigate it
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            client.focus();
+            client.navigate(notificationsUrl);
+            return;
+          }
+        }
+        // Otherwise open a new window
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(notificationsUrl);
+        }
+      })
+    );
+    return;
+  }
+
+  // ── Body click → navigate to the URL ──
+  const url = notifData.url || '/notifications';
+
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // If a window is already open, focus it and navigate
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           client.focus();
@@ -54,7 +81,6 @@ self.addEventListener('notificationclick', (event) => {
           return;
         }
       }
-      // Otherwise open a new window
       if (self.clients.openWindow) {
         return self.clients.openWindow(url);
       }

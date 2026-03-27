@@ -39,50 +39,203 @@ export async function createNotification(notification: any) {
   }
 }
 
-// Build push payload from notification data
-function buildPushPayload(notif: any): { title: string; body: string; url: string } {
-  // If content has title/body, use those
+// ── Resolve session URL (matching notificationService.ts logic) ──
+function resolveSessionUrl(
+  code: string,
+  application: string
+): { url: string; openInNewTab: boolean } {
+  const app = (application || "").toLowerCase().trim();
+  switch (app) {
+    case "crazyrace":
+      return { url: `https://crazy-race-next.vercel.app/join/${code}`, openInNewTab: true };
+    case "memoryquiz":
+      return { url: `https://memorygame-quiz.vercel.app/join/${code}`, openInNewTab: true };
+    case "quizrush":
+      return { url: `https://quizrun.vercel.app/join/${code}`, openInNewTab: true };
+    case "space quiz":
+    case "spacequiz":
+      return { url: `https://spacequizv1.vercel.app/join/${code}`, openInNewTab: true };
+    case "axiom":
+      return { url: `https://axiomay.vercel.app/join/${code}`, openInNewTab: true };
+    default:
+      return { url: `https://gameforsmartnewui.vercel.app/join/${code}`, openInNewTab: false };
+  }
+}
+
+// ── Enrich & build push payload matching NotificationItem templates ──
+async function buildPushPayload(notif: any): Promise<{
+  title: string;
+  body: string;
+  url: string;
+  actions: { action: string; title: string }[];
+  notifId: string;
+  notifType: string;
+  entityId: string | null;
+  groupId: string | null;
+  sessionCode: string | null;
+  sessionApp: string | null;
+}> {
+  const supabase = await createClient();
+
+  // Default result
+  const result = {
+    title: "GameForSmart",
+    body: "You have a new notification",
+    url: "/notifications",
+    actions: [] as { action: string; title: string }[],
+    notifId: notif.id || "",
+    notifType: notif.type || "",
+    entityId: notif.entity_id || null,
+    groupId: notif.from_group_id || null,
+    sessionCode: null as string | null,
+    sessionApp: null as string | null,
+  };
+
+  // If content has title/body, use those directly
   if (notif.content?.title) {
-    return {
-      title: notif.content.title,
-      body: notif.content.body || notif.content.message || "",
-      url: notif.content.url || "/notifications",
-    };
+    result.title = notif.content.title;
+    result.body = notif.content.body || notif.content.message || "";
+    result.url = notif.content.url || "/notifications";
+    return result;
   }
 
-  // Generate payload based on notification type
-  switch (notif.type) {
-    case "sessionFriend":
-      return {
-        title: "Game Invitation",
-        body: `You have been invited to join a game session!`,
-        url: "/notifications",
-      };
-    case "sessionGroup":
-      return {
-        title: "Game Invitation",
-        body: `You have been invited to join a game session from group!`,
-        url: "/notifications",
-      };
-    case "group":
-      return {
-        title: "Group Invitation",
-        body: `You have been invited to join a group!`,
-        url: "/notifications",
-      };
-    case "friend_request":
-      return {
-        title: "Friend Request 👋",
-        body: "Someone sent you a friend request!",
-        url: "/notifications",
-      };
-    default:
-      return {
-        title: "GameForSmart",
-        body: "You have a new notification",
-        url: "/notifications",
-      };
+  // ── Fetch actor name ──
+  let actorName = "Someone";
+  if (notif.actor_id) {
+    const { data: actor } = await supabase
+      .from("profiles")
+      .select("nickname, fullname, username")
+      .eq("id", notif.actor_id)
+      .single();
+    if (actor) {
+      actorName = actor.nickname || actor.fullname || actor.username || "Someone";
+    }
   }
+
+  // ── Build per notification type (matching NotificationItem.tsx) ──
+  switch (notif.type) {
+    case "sessionFriend": {
+      // Fetch session info
+      let sessionName = "a game session";
+      let sessionApp = "";
+      if (notif.entity_id) {
+        const { data: session } = await supabase
+          .from("game_sessions")
+          .select("game_pin, application, quizzes!game_sessions_quiz_id_fkey(title)")
+          .eq("id", notif.entity_id)
+          .single();
+        if (session) {
+          const quizData = (session as any).quizzes;
+          const title = Array.isArray(quizData) ? quizData[0]?.title : quizData?.title;
+          sessionName = title || "a game session";
+          sessionApp = session.application || "";
+          result.sessionCode = session.game_pin || null;
+          result.sessionApp = sessionApp;
+
+          if (session.game_pin) {
+            const resolved = resolveSessionUrl(session.game_pin, sessionApp);
+            result.url = resolved.url;
+          }
+        }
+      }
+
+      result.title = `Game Invitation 🎮`;
+      result.body = `${actorName} invite you to join session "${sessionName}"`;
+      result.actions = [
+        { action: "accept", title: "✅ Accept" },
+        { action: "decline", title: "❌ Decline" },
+      ];
+      break;
+    }
+
+    case "sessionGroup": {
+      // Fetch group name
+      let groupName = "a group";
+      if (notif.from_group_id) {
+        const { data: group } = await supabase
+          .from("groups")
+          .select("name")
+          .eq("id", notif.from_group_id)
+          .single();
+        if (group) groupName = group.name;
+      }
+
+      // Fetch session info
+      let sessionName = "a game session";
+      let sessionApp = "";
+      if (notif.entity_id) {
+        const { data: session } = await supabase
+          .from("game_sessions")
+          .select("game_pin, application, quizzes!game_sessions_quiz_id_fkey(title)")
+          .eq("id", notif.entity_id)
+          .single();
+        if (session) {
+          const quizData = (session as any).quizzes;
+          const title = Array.isArray(quizData) ? quizData[0]?.title : quizData?.title;
+          sessionName = title || "a game session";
+          sessionApp = session.application || "";
+          result.sessionCode = session.game_pin || null;
+          result.sessionApp = sessionApp;
+
+          if (session.game_pin) {
+            const resolved = resolveSessionUrl(session.game_pin, sessionApp);
+            result.url = resolved.url;
+          }
+        }
+      }
+
+      result.title = `Game Invitation 🎮`;
+      result.body = `${actorName} from group ${groupName} invite you to join session "${sessionName}"`;
+      result.actions = [
+        { action: "accept", title: "✅ Accept" },
+        { action: "decline", title: "❌ Decline" },
+      ];
+      break;
+    }
+
+    case "group": {
+      let groupName = "a group";
+      if (notif.from_group_id) {
+        const { data: group } = await supabase
+          .from("groups")
+          .select("name")
+          .eq("id", notif.from_group_id)
+          .single();
+        if (group) groupName = group.name;
+      }
+
+      result.title = `Group Invitation 👥`;
+      result.body = `${actorName} invite you to join group "${groupName}"`;
+      result.url = "/notifications";
+      result.actions = [
+        { action: "accept", title: "✅ Accept" },
+        { action: "decline", title: "❌ Decline" },
+      ];
+      break;
+    }
+
+    case "friend_request": {
+      result.title = `Friend Request 👋`;
+      result.body = `${actorName} sent you a friend request!`;
+      result.url = "/notifications";
+      break;
+    }
+
+    case "admin": {
+      result.title = notif.content?.title || "System Notification";
+      result.body = notif.content?.message || "";
+      result.url = "/notifications";
+      break;
+    }
+
+    default: {
+      result.title = "GameForSmart";
+      result.body = "You have a new notification";
+      result.url = "/notifications";
+    }
+  }
+
+  return result;
 }
 
 async function sendPushToUser(notif: any) {
@@ -100,16 +253,22 @@ async function sendPushToUser(notif: any) {
 
     if (error || !subscriptions || subscriptions.length === 0) return;
 
-    const pushData = buildPushPayload(notif);
+    const pushData = await buildPushPayload(notif);
 
     const payload = JSON.stringify({
       title: pushData.title,
       body: pushData.body,
-      icon: "/logo.png",
+      icon: "/gameforsmartlogo.png",
+      tag: `notif-${pushData.notifType}-${pushData.notifId || Date.now()}`,
+      actions: pushData.actions,
       data: {
-        type: notif.type,
+        type: pushData.notifType,
         url: pushData.url,
-        entityId: notif.entity_id,
+        notifId: pushData.notifId,
+        entityId: pushData.entityId,
+        groupId: pushData.groupId,
+        sessionCode: pushData.sessionCode,
+        sessionApp: pushData.sessionApp,
       },
     });
 

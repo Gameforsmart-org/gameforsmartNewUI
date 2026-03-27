@@ -35,7 +35,7 @@ export function NotificationTitle({ item }: { item: Notification }) {
     return (
       <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">
         {item.actor_id}{" "}
-        <span className="font-normal text-zinc-500">dari grup</span>{" "}
+        <span className="font-normal text-zinc-500">from group</span>{" "}
         {typeof item.from_group_id === "string" ? item.from_group_id : (item.from_group_id as any)?.name}
       </span>
     );
@@ -60,7 +60,7 @@ export function NotificationDescription({ item }: { item: Notification }) {
     const session = item.entity_id as any;
     return (
       <span className="text-zinc-500 dark:text-zinc-400 text-xs">
-        mengundang bergabung di sesi &ldquo;{session?.name}&rdquo; ({session?.application})
+        invite you to join session &ldquo;{session?.name}&rdquo; ({session?.application})
       </span>
     );
   }
@@ -68,7 +68,7 @@ export function NotificationDescription({ item }: { item: Notification }) {
     const group = item.from_group_id as any;
     return (
       <span className="text-zinc-500 dark:text-zinc-400 text-xs">
-        mengundang bergabung ke grup{" "}
+        invite you to join group{" "}
         <span className="font-semibold text-zinc-700 dark:text-zinc-300">
           {group?.name ?? group}
         </span>
@@ -82,7 +82,7 @@ export function NotificationDescription({ item }: { item: Notification }) {
       </span>
     );
   }
-  return <span className="text-zinc-500 dark:text-zinc-400 text-xs">Tindakan diperlukan</span>;
+  return <span className="text-zinc-500 dark:text-zinc-400 text-xs">Action required</span>;
 }
 
 // ── Status badge ──────────────────────────────────────────────
@@ -97,7 +97,7 @@ export function StatusBadge({ status }: { status: "accepted" | "declined" }) {
           : "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400"
       )}
     >
-      {status === "accepted" ? "Diterima" : "Ditolak"}
+      {status === "accepted" ? "Accepted" : "Declined"}
     </span>
   );
 }
@@ -156,7 +156,7 @@ export function ActionButtons({
         onClick={() => onAction(item, "accepted")}
         disabled={isLoading}
       >
-        {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Terima"}
+        {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Accept"}
       </Button>
       <Button
         size="sm"
@@ -165,7 +165,7 @@ export function ActionButtons({
         onClick={() => onAction(item, "declined")}
         disabled={isLoading}
       >
-        Tolak
+        Decline
       </Button>
     </div>
   );

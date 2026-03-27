@@ -22,7 +22,7 @@ import {
   joinGroupAfterAccept,
   resolveSessionUrl,
   subscribeNotifications,
-} from "@/app/(auth)/notifications/service/notificationService";
+} from "@/app/service/notifications/notificationService";
 import type { Notification } from "../types/notifications";
 
 export function useNotifications(channelKey: string = "shared") {
@@ -125,8 +125,6 @@ export function useNotifications(channelKey: string = "shared") {
               window.location.href = url;
             }
           }
-        } else {
-          toast.success("Notifikasi ditolak");
         }
       } catch (error: any) {
         console.error("[useNotifications] handleAction:", error);

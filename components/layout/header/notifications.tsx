@@ -150,7 +150,7 @@ const Notifications = () => {
           }
         }
       } else {
-        toast.success("Notifikasi ditolak");
+        // toast.success("Notifikasi ditolak");
       }
     } catch (error: any) {
       console.error("Action error:", error);
