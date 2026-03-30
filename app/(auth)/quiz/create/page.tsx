@@ -11,8 +11,8 @@ export async function generateMetadata() {
   return generateMeta({
     title: "Create Quiz",
     description:
-      "The admin dashboard template offers a sleek and efficient interface for monitoring important data and user interactions. Built with shadcn/ui.",
-    canonical: "/create"
+      "Create a new quiz with your own questions and answers.",
+    canonical: "/quiz/create"
   });
 }
 

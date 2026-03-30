@@ -83,7 +83,7 @@ export function DashboardTabs({
           <div className="hidden flex-row items-center justify-end gap-2 sm:flex sm:w-auto">
             <Button
               className="bg-green-600 hover:bg-green-700 text-white flex shadow-sm border-0"
-              onClick={() => router.push("/create")}
+              onClick={() => router.push("/quiz/create")}
             >
               <PlusIcon className="mr-1 h-4 w-4" />
               <span>Create Quiz</span>
@@ -102,7 +102,7 @@ export function DashboardTabs({
         <div className="mt-4 flex w-full gap-2 sm:hidden">
           <Button
             className="bg-green-600 hover:bg-green-700 text-white flex-1 shadow-sm border-0"
-            onClick={() => router.push("/create")}
+            onClick={() => router.push("/quiz/create")}
           >
             Create
           </Button>

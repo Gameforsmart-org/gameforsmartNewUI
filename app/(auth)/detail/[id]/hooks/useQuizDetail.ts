@@ -126,7 +126,7 @@ export function useQuizDetail(quizId: string) {
 
   // ── Edit ────────────────────────────────────────────────────
   const handleEdit = () => {
-    router.push(`/edit/${quizId}`);
+    router.push(`/quiz/edit/${quizId}`);
   };
 
   // ── Share / copy link ───────────────────────────────────────
