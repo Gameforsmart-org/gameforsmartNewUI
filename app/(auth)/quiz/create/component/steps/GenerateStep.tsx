@@ -114,7 +114,7 @@ export function GenerateStep({
             {aiGenerating ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Mengolah data...</>
             ) : (
-              <><Wand2 className="w-4 h-4" /> Generate Sekarang</>
+              <><Wand2 className="w-4 h-4" /> Generate</>
             )}
           </Button>
         </div>
