@@ -14,11 +14,14 @@ import Link from "next/link";
 import * as React from "react";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/auth-context";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function UserMenu() {
   const { user, profile, signOut } = useAuth();
   const router = useRouter();
+
+  const pathname = usePathname();
+  const restricted = pathname.startsWith("/host") || pathname.startsWith("/play");
 
   const handleSignOut = async () => {
     await signOut();
@@ -60,17 +63,17 @@ export default function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => router.push("/account")}>
+          <DropdownMenuItem disabled={restricted} onClick={() => {router.push("/account")}}>
             <BadgeCheck />
             Account
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/notifications")}>
+          <DropdownMenuItem disabled={restricted} onClick={() => {router.push("/notifications")}}>
             <Bell />
             Notifications
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut}>
+        <DropdownMenuItem disabled={restricted} onClick={handleSignOut}>
           <LogOut />
           Log out
         </DropdownMenuItem>

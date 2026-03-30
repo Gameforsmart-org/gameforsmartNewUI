@@ -20,8 +20,8 @@ import type { Category } from "./types";
 
 // ── Language options ──
 const languageOptions = [
-  { id: "id", label: "🇮🇩 Indonesia" },
-  { id: "en", label: "🇺🇸 English" },
+  { id: "id", label: "Indonesia" },
+  { id: "en", label: "English" },
 ];
 
 interface DashboardHeaderProps {

@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Gamepad2 } from "lucide-react";
+import { Calendar, Gamepad2, User } from "lucide-react";
 import { QuizHistory } from "@/app/(auth)/history/page";
 import { PaginationControl } from "@/components/pagination-control";
 import { formatTimeAgo } from "@/lib/utils";
@@ -75,9 +75,9 @@ export default function QuizHistoryCard({ quiz }: Props) {
                   <span className="truncate max-w-[120px]">{quiz.application}</span>
                 </div>
                 {quiz.role === "player" && quiz.hostName && (
-                  <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
-                    <span className="h-1 w-1 rounded-full bg-zinc-300" />
-                    <span className="truncate max-w-[80px]">Host: {quiz.hostName}</span>
+                  <div className="flex items-center gap-1.5 text-[10px] text-zinc-400" title="Host">
+                    <User size={13} className="text-orange-500" />
+                    <span className="truncate max-w-[80px]" > {quiz.hostName}</span>
                   </div>
                 )}
               </div>
