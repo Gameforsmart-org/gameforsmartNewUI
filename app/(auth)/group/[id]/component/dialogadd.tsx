@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 import { supabase } from "@/lib/supabase";
+import { createNotification } from "@/app/service/notification";
 import { Loader2, Search } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -93,7 +94,7 @@ export default function DialogAdd({ groupId }: DialogAddProps) {
       // Check if already member? (Optional)
 
       
-      const { error } = await supabase.from("notifications").insert({
+      await createNotification({
         user_id: userId,
         actor_id: profileId,
         type: "group",
@@ -101,11 +102,11 @@ export default function DialogAdd({ groupId }: DialogAddProps) {
         entity_id: null,
         from_group_id: groupId,
         is_read: false,
-        status: null, // As requested
-        content: null // As requested
+        status: null,
+        content: null
       });
 
-      if (error) throw error;
+
 
       toast.success("Invitation sent successfully");
 

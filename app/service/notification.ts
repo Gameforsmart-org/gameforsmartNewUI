@@ -18,15 +18,19 @@ export async function createNotification(notification: any) {
     const isArray = Array.isArray(notification);
     const notifications = isArray ? notification : [notification];
 
-    const { error } = await supabase.from("notifications").insert(notification);
+    const { data: insertedRows, error } = await supabase
+      .from("notifications")
+      .insert(notification)
+      .select("id, user_id, actor_id, type, entity_type, entity_id, from_group_id, content");
 
     if (error) {
       console.error("Supabase notification insert error:", error);
       throw new Error(error.message);
     }
 
-    // Send push notification to each user in background
-    for (const notif of notifications) {
+    // Send push notification using inserted rows (which have DB-generated IDs)
+    const rowsToSend = insertedRows || notifications;
+    for (const notif of rowsToSend) {
       sendPushToUser(notif).catch((err) =>
         console.error("Push notification failed:", err)
       );
@@ -207,10 +211,10 @@ async function buildPushPayload(notif: any): Promise<{
       result.title = `Group Invitation 👥`;
       result.body = `${actorName} invite you to join group "${groupName}"`;
       result.url = "/notifications";
-      result.actions = [
-        { action: "accept", title: "✅ Accept" },
-        { action: "decline", title: "❌ Decline" },
-      ];
+      // result.actions = [
+      //   { action: "accept", title: "✅ Accept" },
+      //   { action: "decline", title: "❌ Decline" },
+      // ];
       break;
     }
 
@@ -258,7 +262,7 @@ async function sendPushToUser(notif: any) {
     const payload = JSON.stringify({
       title: pushData.title,
       body: pushData.body,
-      icon: "/gameforsmartlogo.png",
+      icon: "/logo.png",
       tag: `notif-${pushData.notifType}-${pushData.notifId || Date.now()}`,
       actions: pushData.actions,
       data: {

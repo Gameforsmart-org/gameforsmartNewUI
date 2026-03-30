@@ -45,44 +45,63 @@ self.addEventListener('notificationclick', (event) => {
   const notifData = event.notification.data || {};
   const action = event.action; // "accept", "decline", or "" (body click)
 
-  // ── Action button clicked ──
-  if (action === 'accept' || action === 'decline') {
-    // Open the notifications page where user can complete the action
-    const notificationsUrl = '/notifications';
+  // ── Accept button → navigate to the session/action URL ──
+  if (action === 'accept') {
+    const url = notifData.url || '/notifications';
+
+    // Also update status to "accepted" in DB
+    if (notifData.notifId) {
+      fetch('/api/push-notifications/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notifId: notifData.notifId, action: 'accepted' }),
+      }).catch((err) => console.error('Accept action failed:', err));
+    }
 
     event.waitUntil(
       self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        // If a window is already open, navigate it
         for (const client of clientList) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
             client.focus();
-            client.navigate(notificationsUrl);
+            client.navigate(url);
             return;
           }
         }
-        // Otherwise open a new window
         if (self.clients.openWindow) {
-          return self.clients.openWindow(notificationsUrl);
+          return self.clients.openWindow(url);
         }
       })
     );
     return;
   }
 
-  // ── Body click → navigate to the URL ──
-  const url = notifData.url || '/notifications';
+  // ── Decline button → update status to "declined" in DB, no navigation ──
+  if (action === 'decline') {
+    if (notifData.notifId) {
+      event.waitUntil(
+        fetch('/api/push-notifications/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notifId: notifData.notifId, action: 'declined' }),
+        }).catch((err) => console.error('Decline action failed:', err))
+      );
+    }
+    // Don't open any window — just update the DB
+    return;
+  }
 
+  // ── Body click → navigate to /notifications ──
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           client.focus();
-          client.navigate(url);
+          client.navigate('/notifications');
           return;
         }
       }
       if (self.clients.openWindow) {
-        return self.clients.openWindow(url);
+        return self.clients.openWindow('/notifications');
       }
     })
   );
