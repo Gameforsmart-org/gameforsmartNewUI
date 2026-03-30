@@ -217,6 +217,8 @@ export function resolveSessionUrl(
       return { url: `https://spacequizv1.vercel.app/join/${code}`, openInNewTab: true };
     case "axiom":
       return { url: `https://axiomay.vercel.app/join/${code}`, openInNewTab: true };
+    case "zigma":
+      return { url: `https://zigma.gameforsmart.com/join/${code}`, openInNewTab: true };
     default:
       return { url: `https://gameforsmartnewui.vercel.app/join/${code}`, openInNewTab: false };
   }

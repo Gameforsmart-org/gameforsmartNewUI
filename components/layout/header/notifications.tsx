@@ -136,6 +136,10 @@ const Notifications = () => {
               targetUrl = `https://axiomay.vercel.app/join/${code}`;
               openInNewTab = true;
               break;
+            case "zigma":
+              targetUrl = `https://zigma.gameforsmart.com/join/${code}`;
+              openInNewTab = true;
+              break;
             case "Quiz V2":
             default:
               targetUrl = `https://gameforsmartnewui.vercel.app/join/${code}`;
