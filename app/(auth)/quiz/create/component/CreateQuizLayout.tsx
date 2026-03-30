@@ -194,28 +194,14 @@ export function CreateQuizLayout() {
           )}
 
           <div className="flex-1" />
-
-          <Button
-            size="sm"
-            onClick={quiz.handleSubmit}
-            disabled={quiz.loading || quiz.isSubmitting || quiz.questions.length === 0}
-            className="button-orange gap-1.5 h-8 px-4 text-xs font-bold rounded-lg"
-          >
-            {quiz.loading || quiz.isSubmitting ? (
-              <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Menyimpan...</>
-            ) : (
-              <><Save className="w-3.5 h-3.5" /> Simpan Quiz</>
-            )}
-          </Button>
         </div>
       </header>
 
       {/* ─── Tab Navigation ─── */}
       <div className="bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 sticky top-14 z-30">
-        <div className="px-4 sm:px-6 max-w-[1400px] mx-auto">
-          <nav className="flex gap-0" role="tablist">
+        <div className="px-4 sm:px-6 max-w-[1400px] mx-auto flex items-center justify-between">
+          <nav className="flex gap-0 overflow-hidden" role="tablist">
             {tabs.map((tab, index) => {
-              const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               const isEnabled = isTabEnabled(tab.id);
               const isComplete = isTabComplete(tab.id);
@@ -229,7 +215,7 @@ export function CreateQuizLayout() {
                   disabled={!isEnabled}
                   onClick={() => isEnabled && setActiveTab(tab.id)}
                   className={cn(
-                    "relative flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px",
+                    "relative flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px hover:cursor-pointer whitespace-nowrap",
                     isActive
                       ? "border-orange-500 text-orange-600 dark:text-orange-400"
                       : isEnabled
@@ -238,18 +224,16 @@ export function CreateQuizLayout() {
                   )}
                 >
                   <span className={cn(
-                    "w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center",
-                    isActive ? "bg-orange-500 text-white"
-                      : isComplete ? "bg-green-500 text-white"
+                    "w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center shrink-0",
+                    (isActive || isComplete) ? "bg-orange-500 text-white"
                       : isEnabled ? "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
                       : "bg-zinc-50 text-zinc-300 dark:bg-zinc-900 dark:text-zinc-700"
                   )}>
-                    {isComplete && !isActive ? "✓" : index + 1}
+                    {index + 1}
                   </span>
-                  <Icon className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">{tab.label}</span>
                   {badge && (
-                    <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                    <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 shrink-0">
                       {badge}
                     </span>
                   )}
@@ -257,15 +241,31 @@ export function CreateQuizLayout() {
               );
             })}
           </nav>
+          
+          <div className="ml-4 shrink-0 py-2 hidden sm:block">
+            <Button
+              size="sm"
+              onClick={quiz.handleSubmit}
+              disabled={quiz.loading || quiz.isSubmitting || quiz.questions.length === 0}
+              className="button-orange gap-1.5 h-8 px-4 text-xs font-bold rounded-lg"
+            >
+              {quiz.loading || quiz.isSubmitting ? (
+                <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Menyimpan...</>
+              ) : (
+                <><Save className="w-3.5 h-3.5" /> Simpan Quiz</>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* ─── Main content ─── */}
       <div className="flex max-w-[1400px] mx-auto">
-        <main className="flex-1 min-w-0 px-4 sm:px-6 py-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
+        <main className="flex-1 min-w-0 px-4 sm:px-6 py-6 w-full">
+          <div className="max-w-4xl mx-auto">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
@@ -316,97 +316,8 @@ export function CreateQuizLayout() {
               </div>
             </motion.div>
           </AnimatePresence>
-        </main>
-
-        {/* ─── Right sidebar ─── */}
-        <aside className="hidden xl:block w-64 shrink-0 py-6 pr-6">
-          <div className="sticky top-32 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-            {/* Header */}
-            <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
-              <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Workflow Progress</p>
-              <div className="flex gap-1 mt-2">
-                {[0,1,2,3].map(i => (
-                  <div key={i} className={cn(
-                    "h-1 flex-1 rounded-full",
-                    tabs.findIndex(t => t.id === activeTab) >= i ? "bg-orange-500" : "bg-zinc-200 dark:bg-zinc-800"
-                  )} />
-                ))}
-              </div>
-            </div>
-
-            {/* Steps */}
-            <div className="p-3 space-y-1">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isComplete = isTabComplete(tab.id);
-                const isEnabled = isTabEnabled(tab.id);
-                const isActive = activeTab === tab.id;
-
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => isEnabled && setActiveTab(tab.id)}
-                    disabled={!isEnabled}
-                    className={cn(
-                      "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors text-left",
-                      isActive
-                        ? "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400"
-                        : isEnabled
-                        ? "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                        : "text-zinc-300 dark:text-zinc-700 cursor-not-allowed"
-                    )}
-                  >
-                    <span className={cn(
-                      "w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center",
-                      isComplete ? "bg-green-500 text-white"
-                        : isActive ? "bg-orange-500 text-white"
-                        : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600"
-                    )}>
-                      {isComplete ? "✓" : ""}
-                    </span>
-                    <Icon className="w-3.5 h-3.5" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Summary */}
-            <div className="px-4 py-3 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
-              <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">Quick Summary</p>
-              <SummaryRow label="Metode" value={quiz.selectedMethod ? methodLabel[quiz.selectedMethod]?.label : "—"} highlight={!!quiz.selectedMethod} />
-              <SummaryRow label="Judul" value={quiz.formData.title || "—"} truncate />
-              <SummaryRow label="Soal" value={quiz.questions.length > 0 ? `${quiz.questions.length} Soal` : "—"} highlight={quiz.questions.length > 0} />
-              <SummaryRow label="Status" value={quiz.formData.is_public ? "Public" : "Private"} />
-            </div>
-
-            {/* Validation */}
-            {quiz.validationIssues.length > 0 && (
-              <div className="mx-3 mb-3 flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-xs">
-                <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-                <div>
-                  <p className="font-bold text-red-700 dark:text-red-400">Perhatian</p>
-                  <p className="text-red-600/80 dark:text-red-400/80">{quiz.validationIssues.length} soal perlu koreksi.</p>
-                </div>
-              </div>
-            )}
-
-            {/* Save CTA */}
-            <div className="p-3 border-t border-zinc-100 dark:border-zinc-800">
-              <Button
-                className="w-full button-orange gap-1.5 h-9 text-xs font-bold rounded-lg"
-                onClick={quiz.handleSubmit}
-                disabled={quiz.loading || quiz.isSubmitting || quiz.questions.length === 0}
-              >
-                {quiz.loading || quiz.isSubmitting ? (
-                  <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Loading...</>
-                ) : (
-                  <><Save className="w-3.5 h-3.5" /> Simpan Quiz</>
-                )}
-              </Button>
-            </div>
           </div>
-        </aside>
+        </main>
       </div>
 
       {/* Dialogs */}
@@ -422,17 +333,4 @@ export function CreateQuizLayout() {
   );
 }
 
-function SummaryRow({ label, value, truncate = false, highlight = false }: { label: string; value: string; truncate?: boolean; highlight?: boolean }) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-xs text-zinc-400 dark:text-zinc-500">{label}</span>
-      <span className={cn(
-        "text-xs font-semibold text-right",
-        truncate && "truncate max-w-[100px]",
-        highlight ? "text-orange-600 dark:text-orange-400" : "text-zinc-700 dark:text-zinc-300"
-      )} title={truncate ? value : undefined}>
-        {value}
-      </span>
-    </div>
-  );
-}
+

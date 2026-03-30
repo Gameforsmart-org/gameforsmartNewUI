@@ -10,7 +10,7 @@ interface InfoStepProps {
 
 export function InfoStep({ formData, onChange }: InfoStepProps) {
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl mx-auto">
       <QuizFormFields formData={formData} onChange={onChange} idPrefix="manual" />
     </div>
   );

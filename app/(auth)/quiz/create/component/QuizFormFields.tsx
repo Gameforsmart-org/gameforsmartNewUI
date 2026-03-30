@@ -23,7 +23,7 @@ export function QuizFormFields({ formData, onChange, idPrefix = "quiz" }: QuizFo
   const { t } = useI18n();
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 max-w-3xl mx-auto">
       {/* Title */}
       <div className="space-y-1.5">
         <Label htmlFor={`${idPrefix}-title`} className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Judul Quiz</Label>
@@ -129,21 +129,7 @@ export function QuizFormFields({ formData, onChange, idPrefix = "quiz" }: QuizFo
         />
       </div>
 
-      {/* Cover Image */}
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Gambar Cover</Label>
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">
-          <ImageUpload
-            imageUrl={formData.image_url}
-            onImageChange={(url: any) => onChange({ image_url: url })}
-            label=""
-            className="w-full max-w-md mx-auto aspect-video rounded-lg overflow-hidden"
-          />
-          <p className="text-[10px] text-center text-zinc-400 mt-3 font-medium">
-            Rekomendasi: 1200x630 pixel (JPG/PNG)
-          </p>
-        </div>
-      </div>
+
     </div>
   );
 }

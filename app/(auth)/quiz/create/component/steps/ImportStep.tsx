@@ -17,7 +17,7 @@ export function ImportStep({ formData, onChange, questionsCount, onImport }: Imp
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto">
       {/* Upload card */}
       <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
         <div className="flex items-center gap-2.5 px-5 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">

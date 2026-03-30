@@ -34,7 +34,7 @@ export function GenerateStep({
   const isDisabled = !aiPrompt.trim() || aiGenerating || isProfileLoading;
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto w-full">
       {/* AI Prompt section */}
       <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
         {/* Header */}
@@ -51,7 +51,7 @@ export function GenerateStep({
           <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 bg-white dark:bg-zinc-800 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700">
             <Zap className="w-3 h-3 text-orange-500" />
             <span className={userQuota.remainingTokens === 0 ? "text-red-500" : ""}>{userQuota.remainingTokens}</span>
-            <span className="text-zinc-400">/ 2 Token</span>
+            <span className="text-zinc-400">/ 2 Quota</span>
           </div>
         </div>
 
@@ -82,52 +82,21 @@ export function GenerateStep({
           </div>
 
           {/* Settings row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {/* Question count */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Jumlah Pertanyaan</Label>
-                <span className="text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-0.5 rounded">
-                  {aiOptions.questionCount}
-                </span>
-              </div>
-              <Slider
-                min={5} max={50} step={5}
-                value={[aiOptions.questionCount]}
-                onValueChange={(v) => onAiOptionsChange({ questionCount: v[0] })}
-              />
-              <div className="flex justify-between text-[10px] text-zinc-400">
-                <span>Min 5</span><span>Max 50</span>
-              </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Jumlah Pertanyaan</Label>
+              <span className="text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-0.5 rounded">
+                {aiOptions.questionCount}
+              </span>
             </div>
-
-            {/* Options */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Opsi</Label>
-              {[
-                { label: "Update metadata", key: "updateMetadata" as const, value: aiOptions.updateMetadata },
-                { label: "Tambah ke koleksi", key: "appendToExisting" as const, value: aiOptions.appendToExisting },
-              ].map((opt) => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() => onAiOptionsChange({ [opt.key]: !opt.value })}
-                  className={cn(
-                    "w-full flex items-center justify-between rounded-lg border px-3 py-2.5 text-xs font-semibold transition-colors",
-                    opt.value
-                      ? "border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-700 dark:bg-orange-900/20 dark:text-orange-400"
-                      : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"
-                  )}
-                >
-                  {opt.label}
-                  <div className={cn(
-                    "w-4 h-4 rounded border flex items-center justify-center",
-                    opt.value ? "bg-orange-500 border-orange-500 text-white" : "border-zinc-300 dark:border-zinc-700"
-                  )}>
-                    {opt.value && <span className="text-[8px]">✓</span>}
-                  </div>
-                </button>
-              ))}
+            <Slider
+              min={5} max={50} step={5}
+              value={[aiOptions.questionCount]}
+              onValueChange={(v) => onAiOptionsChange({ questionCount: v[0] })}
+              className="[&_[data-slot=slider-range]]:bg-orange-500 [&_[data-slot=slider-thumb]]:border-orange-500 [&_[data-slot=slider-thumb]]:hover:ring-orange-500/20 [&_[data-slot=slider-thumb]]:focus-visible:ring-orange-500/20"
+            />
+            <div className="flex justify-between text-[10px] text-zinc-400">
+              <span>Min 5</span><span>Max 50</span>
             </div>
           </div>
 
@@ -136,8 +105,10 @@ export function GenerateStep({
             onClick={onGenerate}
             disabled={isDisabled}
             className={cn(
-              "w-full gap-2 h-10 text-sm font-bold rounded-lg",
-              isDisabled ? "" : "button-orange"
+              "w-full gap-2 h-11 text-sm font-bold rounded-xl transition-all duration-300",
+              isDisabled
+                ? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-600"
+                : "bg-orange-500 hover:bg-orange-600 text-white dark:bg-orange-600 dark:hover:bg-orange-500 dark:text-zinc-950 shadow-lg shadow-orange-500/10"
             )}
           >
             {aiGenerating ? (
