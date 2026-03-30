@@ -7,8 +7,8 @@ export async function generateMetadata() {
   return generateMeta({
     title: "Friend",
     description:
-      "A friend dashboard is an admin panel that visualizes key friend data such as income, expenses, cash flow, budget, and profit. Built with shadcn/ui, Tailwind CSS, Next.js.",
-    canonical: "/friend"
+      "A friend dashboard",
+    canonical: "/friends"
   });
 }
 
@@ -19,7 +19,7 @@ export default async function Page() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?redirect=/friend");
+    redirect("/login?redirect=/friends");
   }
 
   // Get profile id

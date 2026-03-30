@@ -14,7 +14,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/login?redirect=/group/${id}`);
+    redirect(`/login?redirect=/groups/${id}`);
   }
 
   // Get User Profile to get the XID (profile.id) which is used in group members
@@ -27,7 +27,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   if (!userProfile) {
     // If no profile found, user cannot be a member (or invalid state), redirect
-    redirect("/group");
+    redirect("/groups");
   }
 
   const currentUserXid = (userProfile as any).id;
@@ -54,7 +54,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const isMember = memberIds.includes(currentUserXid);
 
   if (!isMember) {
-    redirect("/group");
+    redirect("/groups");
   }
 
   let profiles: any[] = [];

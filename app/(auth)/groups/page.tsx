@@ -5,10 +5,10 @@ import Header from "./component/header";
 
 export async function generateMetadata() {
   return generateMeta({
-    title: "Group",
+    title: "Groups",
     description:
-      "A group dashboard is an admin panel that visualizes key group data such as income, expenses, cash flow, budget, and profit. Built with shadcn/ui, Tailwind CSS, Next.js.",
-    canonical: "/group"
+      "A groups page is a page that displays all the groups that the user is a member of and groups that the user can join.",
+    canonical: "/groups"
   });
 }
 
@@ -19,7 +19,7 @@ export default async function Page() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?redirect=/group");
+    redirect("/login?redirect=/groups");
   }
 
   // Get profile id

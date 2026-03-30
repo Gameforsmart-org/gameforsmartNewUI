@@ -282,7 +282,7 @@ export default function GroupCard({
                   <div className="flex-shrink-0">
                     {isMyGroup ? (
                       <Button
-                        onClick={() => router.push(`/group/${group.id}`)}
+                        onClick={() => router.push(`/groups/${group.id}`)}
                         variant="secondary"
                         className="button-orange-outline h-9 rounded-xl px-4 text-sm">
                         Detail

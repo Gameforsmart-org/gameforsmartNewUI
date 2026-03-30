@@ -142,7 +142,7 @@ export default function GroupDetail({ group, members }: GroupDetailProps) {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink
-                  href="/group"
+                  href="/groups"
                   className="hover:text-orange-600 dark:hover:text-orange-400">
                   Group
                 </BreadcrumbLink>

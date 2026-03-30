@@ -102,11 +102,11 @@ export const navItems: NavGroup[] = [
         icon: LayoutDashboardIcon
       },
       {
-        title: "Friend",
-        href: "/friend",
+        title: "Friends",
+        href: "/friends",
         icon: HandshakeIcon
       },
-      { title: "Group", href: "/group", icon: Users },
+      { title: "Group", href: "/groups", icon: Users },
       { title: "History", href: "/history", icon: History },
       {
         title: "Evaluation",

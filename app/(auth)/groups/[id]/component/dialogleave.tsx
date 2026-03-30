@@ -51,7 +51,7 @@ export function DialogLeave({ groupId, currentMembers }: DialogLeaveProps) {
 
       toast.success("You have left the group");
       setOpen(false);
-      router.push("/group");
+      router.push("/groups");
       router.refresh();
     } catch (error: any) {
       console.error("Leave error:", error);
