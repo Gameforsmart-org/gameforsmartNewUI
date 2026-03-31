@@ -63,9 +63,9 @@ export default function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem disabled={restricted} onClick={() => {router.push("/account")}}>
+          <DropdownMenuItem disabled={restricted} onClick={() => {router.push("/profile")}}>
             <BadgeCheck />
-            Account
+            Profile
           </DropdownMenuItem>
           <DropdownMenuItem disabled={restricted} onClick={() => {router.push("/notifications")}}>
             <Bell />
