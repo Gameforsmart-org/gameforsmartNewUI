@@ -154,10 +154,12 @@ export default function LoginForm() {
 
       if (redirectPath) {
         if (isExternal) {
-          // Simpan URL external ke cookie tersendiri agar tidak ikut OAuth flow
+          // Simpan URL external ke cookie & localStorage sebagai cadangan
           document.cookie = `external-redirect=${encodeURIComponent(redirectPath)}; path=/; max-age=3600; SameSite=Lax`;
-          // nextPath tetap /callback, callback akan baca cookie
-          nextPath = "/callback";
+          localStorage.setItem("external-redirect", redirectPath);
+          
+          // Tetap masukkan ke URL redirect sebagai backup utama
+          nextPath = `/callback?redirect=${encodeURIComponent(redirectPath)}`;
         } else if (gamePin && !redirectPath.includes(gamePin)) {
           nextPath = `/callback?redirect=${encodeURIComponent(redirectPath)}&pin=${gamePin}`;
         } else {
