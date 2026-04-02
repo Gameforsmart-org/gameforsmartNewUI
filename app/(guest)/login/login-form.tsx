@@ -149,23 +149,31 @@ export default function LoginForm() {
       console.log("🔥 Login - gamePin:", gamePin);
       console.log("🔥 Login - isExternal:", isExternal);
 
-      // Tentukan nextPath untuk internal redirect (selalu lewat /callback agar profile dicek)
+      // Build the nextPath that the server route will redirect to after OAuth
       let nextPath = "/callback";
 
       if (redirectPath) {
         if (isExternal) {
-          // Simpan URL external ke cookie tersendiri agar tidak ikut OAuth flow
+          // Store external URL in both cookie AND localStorage for reliability
           document.cookie = `external-redirect=${encodeURIComponent(redirectPath)}; path=/; max-age=3600; SameSite=Lax`;
-          // nextPath tetap /callback, callback akan baca cookie
+          localStorage.setItem("pending_external_redirect", redirectPath);
           nextPath = "/callback";
-        } else if (gamePin && !redirectPath.includes(gamePin)) {
+        } else if (gamePin) {
           nextPath = `/callback?redirect=${encodeURIComponent(redirectPath)}&pin=${gamePin}`;
         } else {
           nextPath = `/callback?redirect=${encodeURIComponent(redirectPath)}`;
         }
       }
 
-      // Simpan target path ke cookie (dibaca oleh server di /auth/callback)
+      // Also store redirect info in localStorage as backup (cookies can fail across OAuth redirects)
+      if (redirectPath && !isExternal) {
+        localStorage.setItem("oauth_redirect_path", redirectPath);
+      }
+      if (gamePin) {
+        localStorage.setItem("oauth_game_pin", gamePin);
+      }
+
+      // Store target path in cookie (read by server at /auth/callback)
       document.cookie = `auth-redirect=${encodeURIComponent(nextPath)}; path=/; max-age=3600; SameSite=Lax`;
 
       const callbackUrl = `${window.location.origin}/auth/callback`;

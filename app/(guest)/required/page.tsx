@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/auth-context";
 import { User, Loader2, Navigation } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-browser";
 import { LocationSelector, type LocationValue } from "@/components/ui/location-selector";
 import { updateProfileAction, checkUsernameAction } from "@/app/service/profile";
 
@@ -81,13 +81,42 @@ function RequiredPage() {
 
   const [state, formAction, isPendingForm] = useActionState(updateProfileAction, null);
 
+  // Helper: handle redirect after save
+  const handleRedirectAfterSave = async () => {
+    const redirectPath = searchParams.get("redirect") || "/dashboard";
+    const gamePin = searchParams.get("pin");
+    const isExternal = isExternalGameForSmart(redirectPath);
+    const pendingExternal = localStorage.getItem("pending_external_redirect");
+
+    if (isExternal || pendingExternal) {
+      const targetUrl = pendingExternal || redirectPath;
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        localStorage.removeItem("pending_external_redirect");
+        if (token) {
+          console.log("🔥 Required - Redirecting externally to:", targetUrl);
+          window.location.href = `${targetUrl}?token=${encodeURIComponent(token)}`;
+        } else {
+          window.location.href = targetUrl;
+        }
+      } catch {
+        window.location.href = targetUrl;
+      }
+    } else {
+      const url = redirectPath && gamePin ? `${redirectPath}?pin=${gamePin}` : redirectPath;
+      console.log("🔥 Required - Redirecting to:", url);
+      router.push(url);
+    }
+  };
+
   // Monitor form action results
   useEffect(() => {
     if (state?.success) {
       toast.success(state.message);
-      // Async refresh di background. Redirect ditangani oleh
-      // lifecycle effect "Profile is Complete" supaya tidak race condition.
+      // Refresh profile in background (for UI), but redirect immediately
       refreshProfile().catch(console.error);
+      handleRedirectAfterSave();
     } else if (state?.error) {
       setErrorLocal(state.error);
     }
@@ -359,7 +388,22 @@ function RequiredPage() {
       return;
     }
 
-    const formData = new FormData(e.currentTarget);
+    // Build FormData explicitly from React state (don't rely on hidden inputs)
+    const formData = new FormData();
+    formData.set("currentUserId", profile.id);
+    formData.set("username", username);
+    formData.set("countryId", String(location.countryId || ""));
+    formData.set("stateId", String(location.stateId || ""));
+    formData.set("cityId", String(location.cityId || ""));
+
+    console.log("🔥 Required - Submitting FormData:", {
+      currentUserId: profile.id,
+      username,
+      countryId: location.countryId,
+      stateId: location.stateId,
+      cityId: location.cityId
+    });
+
     startTransition(() => {
       formAction(formData);
     });

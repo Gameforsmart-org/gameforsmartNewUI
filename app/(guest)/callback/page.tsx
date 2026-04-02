@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-browser";
 
 // Helper: cek apakah URL adalah domain gameforsmart.com (website 1)
 function isExternalGameForSmart(url: string | null): boolean {
@@ -90,10 +90,19 @@ function AuthCallbackPageContent() {
           }
 
           // Baca cookie external-redirect (disimpan saat Google login dari external URL)
-          const externalRedirectUrl = getCookie("external-redirect");
+          let externalRedirectUrl = getCookie("external-redirect");
           if (externalRedirectUrl) {
             deleteCookie("external-redirect");
             console.log("🔥 Found external-redirect cookie:", externalRedirectUrl);
+          }
+
+          // Fallback: check localStorage if cookie didn't survive OAuth round-trip
+          if (!externalRedirectUrl) {
+            const pendingExternal = localStorage.getItem("pending_external_redirect");
+            if (pendingExternal && isExternalGameForSmart(pendingExternal)) {
+              externalRedirectUrl = pendingExternal;
+              console.log("🔥 Found external-redirect in localStorage:", externalRedirectUrl);
+            }
           }
 
           console.log("🔥 Callback - redirectPath:", redirectPath);

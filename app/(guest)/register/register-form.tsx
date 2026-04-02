@@ -404,19 +404,30 @@ export default function RegisterForm() {
       console.log("🔥 Register Google - isExternal:", isExternal);
 
       if (isExternal) {
-        // Simpan external URL ke cookie tersendiri, callback akan membacanya
+        // Store external URL in both cookie AND localStorage for reliability
         document.cookie = `external-redirect=${encodeURIComponent(redirectPath!)}; path=/; max-age=3600; SameSite=Lax`;
+        localStorage.setItem("pending_external_redirect", redirectPath!);
       } else if (redirectPath && gamePin) {
-        // Simpan internal redirect ke localStorage
+        // Store internal redirect to localStorage
         localStorage.setItem("oauth_redirect_path", redirectPath);
         localStorage.setItem("oauth_game_pin", gamePin);
       } else if (redirectPath) {
         localStorage.setItem("oauth_redirect_path", redirectPath);
       }
 
+      // Build nextPath for the server route cookie
+      let nextPath = "/callback";
+      if (redirectPath && !isExternal) {
+        nextPath = gamePin
+          ? `/callback?redirect=${encodeURIComponent(redirectPath)}&pin=${gamePin}`
+          : `/callback?redirect=${encodeURIComponent(redirectPath)}`;
+      }
+      document.cookie = `auth-redirect=${encodeURIComponent(nextPath)}; path=/; max-age=3600; SameSite=Lax`;
+
       const callbackUrl = `${window.location.origin}/auth/callback`;
 
       console.log("🔥 Register Google - callbackUrl:", callbackUrl);
+      console.log("🔥 Register Google - nextPath:", nextPath);
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",

@@ -1,6 +1,6 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase-server";
 
 export async function checkUsernameAction(username: string, currentUserId?: string) {
   if (!username) {
@@ -31,6 +31,7 @@ export async function checkUsernameAction(username: string, currentUserId?: stri
   }
 
   try {
+    const supabase = await createClient();
     const { data: existingUsers, error } = await supabase
       .from("profiles")
       .select("id, username")
@@ -72,9 +73,24 @@ export async function checkUsernameAction(username: string, currentUserId?: stri
 export async function updateProfileAction(prevState: any, formData: FormData) {
   const currentUserId = formData.get("currentUserId") as string;
   const username = formData.get("username") as string;
-  const countryId = formData.get("countryId") as string;
-  const stateId = formData.get("stateId") as string;
-  const cityId = formData.get("cityId") as string;
+  const countryIdRaw = formData.get("countryId") as string;
+  const stateIdRaw = formData.get("stateId") as string;
+  const cityIdRaw = formData.get("cityId") as string;
+
+  console.log("🔥 Server Action - Raw FormData:", {
+    currentUserId,
+    username,
+    countryIdRaw,
+    stateIdRaw,
+    cityIdRaw
+  });
+
+  // Parse numeric IDs (DB columns are integer, formData sends strings)
+  const countryId = countryIdRaw && countryIdRaw !== "" ? parseInt(countryIdRaw, 10) : null;
+  const stateId = stateIdRaw && stateIdRaw !== "" ? parseInt(stateIdRaw, 10) : null;
+  const cityId = cityIdRaw && cityIdRaw !== "" ? parseInt(cityIdRaw, 10) : null;
+
+  console.log("🔥 Server Action - Parsed IDs:", { countryId, stateId, cityId });
 
   try {
     // Re-validate everything on the server
@@ -84,22 +100,39 @@ export async function updateProfileAction(prevState: any, formData: FormData) {
     }
 
     if (!countryId) {
+      console.log("🔥 Server Action - countryId is falsy, returning error");
       return { error: "Please select your country" };
     }
 
-    const { error: updateError } = await supabase
+    const supabase = await createClient();
+
+    const updateData = {
+      username: username,
+      country_id: countryId,
+      state_id: stateId,
+      city_id: cityId,
+      updated_at: new Date().toISOString()
+    };
+
+    console.log("🔥 Server Action - Update data:", updateData);
+    console.log("🔥 Server Action - Updating profile with id:", currentUserId);
+
+    const { data: updateResult, error: updateError } = await supabase
       .from("profiles")
-      .update({
-        username: username,
-        country_id: countryId || null,
-        state_id: stateId || null,
-        city_id: cityId || null,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", currentUserId);
+      .update(updateData)
+      .eq("id", currentUserId)
+      .select("id, username, country_id, state_id, city_id");
 
     if (updateError) {
+      console.error("🔥 Server Action - Update error:", updateError);
       throw updateError;
+    }
+
+    console.log("🔥 Server Action - Update result:", updateResult);
+
+    if (!updateResult || updateResult.length === 0) {
+      console.error("🔥 Server Action - No rows updated! RLS may be blocking the update.");
+      return { error: "Failed to update profile. Please try again." };
     }
 
     return {
@@ -107,7 +140,7 @@ export async function updateProfileAction(prevState: any, formData: FormData) {
       message: "Profile updated successfully!"
     };
   } catch (error: any) {
-    console.error("Error updating profile:", error);
+    console.error("🔥 Server Action - Error:", error);
     return { error: error.message || "Failed to update profile" };
   }
 }
