@@ -19,6 +19,7 @@ export interface QuizHistory {
   application: string;
   roles: QuizActivityType[];
   hostName?: string;
+  hostUsername?: string;
   category?: string;
   language?: string;
 }
@@ -57,13 +58,15 @@ async function getQuizHistory(): Promise<QuizHistory[]> {
   const hostIds = Array.from(new Set(sessions.map((s: any) => s.host_id).filter(Boolean)));
   const { data: hosts } = await supabase
     .from("profiles")
-    .select("id, fullname, nickname")
+    .select("id, fullname, nickname, username")
     .in("id", hostIds);
 
   const hostMap: Record<string, string> = {};
+  const hostUsernameMap: Record<string, string> = {};
   if (hosts) {
     hosts.forEach((h: any) => {
       hostMap[h.id] = h.fullname || h.nickname || "Unknown Host";
+      hostUsernameMap[h.id] = h.username || "";
     });
   }
 
@@ -104,6 +107,7 @@ async function getQuizHistory(): Promise<QuizHistory[]> {
         application,
         roles,
         hostName: isParticipant ? (hostMap[session.host_id] || "Unknown Host") : undefined,
+        hostUsername: isParticipant ? (hostUsernameMap[session.host_id] || "") : undefined,
         category,
         language,
       });

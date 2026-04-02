@@ -109,9 +109,19 @@ export default function QuizHistoryCard({ quiz }: Props) {
                   <span className="max-w-[120px] truncate">{quiz.application}</span>
                 </div>
                 {quiz.roles.includes("player") && quiz.hostName && (
-                  <div className="flex items-center gap-1.5 text-[10px] text-zinc-400" title="Host">
+                  <div
+                    className="flex cursor-pointer items-center gap-1.5 text-[10px] text-zinc-400 transition-colors hover:text-orange-500"
+                    title={`Host: ${quiz.hostName}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (quiz.hostUsername) {
+                        router.push(`/profile/${quiz.hostUsername}`);
+                      }
+                    }}>
                     <User size={13} className="text-orange-500" />
-                    <span className="max-w-[80px] truncate"> {quiz.hostName}</span>
+                    <span className="max-w-[80px] truncate underline decoration-dotted underline-offset-2">
+                      {quiz.hostName}
+                    </span>
                   </div>
                 )}
               </div>

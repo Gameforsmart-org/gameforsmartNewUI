@@ -222,3 +222,88 @@ export async function updateProfileData(prevState: any, formData: FormData) {
     return { error: error.message || "Failed to update profile" };
   }
 }
+
+// ── Public profile (by username slug) ──────────────────────────────────
+
+export interface PublicProfileData {
+  found: boolean;
+  profile: Profile;
+  nickname: string;
+  fullName: string;
+  username: string;
+  organization: string;
+  gender: string;
+  country: string;
+}
+
+export async function getPublicProfileData(slug: string): Promise<PublicProfileData> {
+  const notFound: PublicProfileData = {
+    found: false,
+    profile: { fullName: "Not Found", username: slug, avatar: "", followers: 0, following: 0, friends: 0 },
+    nickname: "",
+    fullName: "",
+    username: slug,
+    organization: "",
+    gender: "",
+    country: "-"
+  };
+
+  if (!slug) return notFound;
+
+  const supabase = await createClient();
+
+  // Fetch profile by username (case-insensitive)
+  const { data: profileData, error } = await supabase
+    .from("profiles")
+    .select(`
+      id,
+      fullname,
+      nickname,
+      username,
+      avatar_url,
+      organization,
+      gender,
+      country_id,
+      countries (name)
+    `)
+    .ilike("username", slug)
+    .single();
+
+  if (error || !profileData) {
+    return notFound;
+  }
+
+  // Fetch friendships
+  const userId = profileData.id;
+  const { data: followingList } = await supabase
+    .from("friendships")
+    .select("addressee_id")
+    .eq("requester_id", userId);
+
+  const { data: followersList } = await supabase
+    .from("friendships")
+    .select("requester_id")
+    .eq("addressee_id", userId);
+
+  const followingIds = followingList?.map((f: any) => f.addressee_id) || [];
+  const followerIds = followersList?.map((f: any) => f.requester_id) || [];
+  const friendsCount = followingIds.filter((id) => followerIds.includes(id)).length;
+
+  return {
+    found: true,
+    profile: {
+      fullName: profileData.fullname || "Anonymous User",
+      username: profileData.username || slug,
+      avatar: profileData.avatar_url || "",
+      followers: followerIds.length,
+      following: followingIds.length,
+      friends: friendsCount
+    },
+    nickname: profileData.nickname || "",
+    fullName: profileData.fullname || "",
+    username: profileData.username || slug,
+    organization: profileData.organization || "",
+    gender: profileData.gender || "",
+    country: (profileData.countries as any)?.name || "-"
+  };
+}
