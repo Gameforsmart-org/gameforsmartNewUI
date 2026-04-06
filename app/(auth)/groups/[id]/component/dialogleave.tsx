@@ -16,6 +16,7 @@ import { ArrowBigDown, ArrowBigUp, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { logGroupActivity } from "@/app/service/group/group.service";
 
 interface DialogLeaveProps {
   groupId: string;
@@ -48,6 +49,9 @@ export function DialogLeave({ groupId, currentMembers }: DialogLeaveProps) {
         .eq("id", groupId);
 
       if (error) throw error;
+
+      // Log leave activity
+      await logGroupActivity(groupId, profileId, profileId, "leave");
 
       toast.success("You have left the group");
       setOpen(false);

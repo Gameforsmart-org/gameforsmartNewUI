@@ -16,6 +16,7 @@
 
 import { supabase } from "@/lib/supabase";
 import type { Notification, SessionEntity } from "@/types/notifications";
+import { logGroupActivity } from "@/app/service/group/group.service";
 
 // ─── fetchNotifications ──────────────────────────────────────
 
@@ -188,6 +189,9 @@ export async function joinGroupAfterAccept(
       .update({ members: [...members, { id: profileId, name: userName, role: "member" }] })
       .eq("id", groupId);
     if (error) throw error;
+
+    // Log "join" activity
+    await logGroupActivity(groupId, profileId, profileId, "join");
   }
 
   return { alreadyMember };

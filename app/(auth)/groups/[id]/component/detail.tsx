@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/auth-context";
-import { Calendar, Copy, EllipsisVertical, Globe, Users } from "lucide-react";
-import { useState } from "react";
+import { Calendar, EllipsisVertical, Globe, LogIn, LogOut, ArrowBigUp, ArrowBigDown, UserX, Users, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
 import { PaginationControl } from "./pagination-control";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { formatTimeAgo } from "@/lib/utils";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -30,6 +31,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { useGroupActivities } from "@/hooks/useGroupActivities";
 
 interface GroupDetailProps {
   group: any;
@@ -41,7 +43,51 @@ export default function GroupDetail({ group, members }: GroupDetailProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [loadingActionId, setLoadingActionId] = useState<string | null>(null);
   const router = useRouter();
+  const { logActivity } = useGroupActivities();
   const ITEMS_PER_PAGE = 14;
+
+  // ── Resolve activity user names ────────────────────────────
+  const [activityNames, setActivityNames] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const activities: any[] = Array.isArray(group.activities) ? group.activities : [];
+    if (activities.length === 0) return;
+
+    // Collect all unique user IDs from activities
+    const allIds = new Set<string>();
+    activities.forEach((a: any) => {
+      if (a.user_id) allIds.add(a.user_id);
+      if (a.actor_id) allIds.add(a.actor_id);
+    });
+
+    // Build name map from existing members first
+    const nameMap: Record<string, string> = {};
+    members.forEach((m: any) => {
+      nameMap[m.id] = m.name;
+    });
+
+    // Find IDs not in members
+    const missingIds = [...allIds].filter((id) => !nameMap[id]);
+
+    if (missingIds.length === 0) {
+      setActivityNames(nameMap);
+      return;
+    }
+
+    // Fetch missing profiles
+    supabase
+      .from("profiles")
+      .select("id, fullname, nickname")
+      .in("id", missingIds)
+      .then(({ data }) => {
+        data?.forEach((p: any) => {
+          nameMap[p.id] = p.fullname || p.nickname || "Unknown User";
+        });
+        setActivityNames({ ...nameMap });
+      });
+  }, [group.activities, members]);
+
+  const [activityLimit, setActivityLimit] = useState(10);
 
   const handleAction = async (memberUserId: string, action: "kick" | "promote" | "demote") => {
     setLoadingActionId(memberUserId);
@@ -72,6 +118,11 @@ export default function GroupDetail({ group, members }: GroupDetailProps) {
         .eq("id", group.id);
 
       if (updateError) throw updateError;
+
+      // Log activity
+      if (profileId) {
+        await logActivity(group.id, memberUserId, profileId, action);
+      }
 
       toast.success(
         `User ${action === "kick" ? "kicked" : action === "promote" ? "promoted" : "demoted"} successfully`
@@ -192,13 +243,8 @@ export default function GroupDetail({ group, members }: GroupDetailProps) {
               {/* Owner & Admin Actions */}
               {(userRole === "owner" || userRole === "admin") && (
                 <div>
-                  <div className="space-y-3 pt-2">
+                  <div className="pt-2">
                     <DialogAdd groupId={group.id} />
-
-                    <Button variant="outline" className="button-green-outline w-full">
-                      <Copy size={16} className="mr-2" />
-                      Copy Invite Link
-                    </Button>
                   </div>
 
                   <div className="flex gap-3 pt-4">
@@ -211,11 +257,8 @@ export default function GroupDetail({ group, members }: GroupDetailProps) {
 
               {/* Member Actions */}
               {userRole === "member" && (
-                <div className="flex gap-3 pt-4">
-                  <Button variant="outline" className="button-green-outline flex-1">
-                    <Copy size={16} className="mr-2" />
-                    Copy Link
-                  </Button>
+                <div className="flex pt-4">
+                  
 
                   <DialogLeave groupId={group.id} currentMembers={group.members} />
                 </div>
@@ -380,13 +423,89 @@ export default function GroupDetail({ group, members }: GroupDetailProps) {
               </div>
             </TabsContent>
 
-            {/* ACTIVITIES TAB */}
             <TabsContent value="activities">
-              <Card className="rounded-xl border border-zinc-200 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                <CardContent className="text-muted-foreground p-6 text-sm">
-                  No recent activities yet.
-                </CardContent>
-              </Card>
+              {(() => {
+                const activities: any[] = Array.isArray(group.activities) ? group.activities : [];
+                const sorted = [...activities].sort(
+                  (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                );
+
+                if (sorted.length === 0) {
+                  return (
+                    <Card className="rounded-xl border border-zinc-200 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                      <CardContent className="text-muted-foreground p-6 text-center text-sm">
+                        No recent activities yet.
+                      </CardContent>
+                    </Card>
+                  );
+                }
+
+                const visible = sorted.slice(0, activityLimit);
+                const hasMore = activityLimit < sorted.length;
+
+                const getName = (id: string) => activityNames[id] || "Unknown User";
+
+                const getActivityIcon = (action: string) => {
+                  switch (action) {
+                    case "join":    return <LogIn size={16} className="text-green-500" />;
+                    case "leave":   return <LogOut size={16} className="text-zinc-400" />;
+                    case "kick":    return <UserX size={16} className="text-red-500" />;
+                    case "promote": return <ArrowBigUp size={16} className="text-blue-500" />;
+                    case "demote":  return <ArrowBigDown size={16} className="text-orange-500" />;
+                    default:        return <Users size={16} className="text-zinc-400" />;
+                  }
+                };
+
+                const getActivityMessage = (a: any) => {
+                  const user = getName(a.user_id);
+                  const actor = getName(a.actor_id);
+                  switch (a.action) {
+                    case "join":    return <><span className="font-semibold text-zinc-900 dark:text-zinc-100">{user}</span> joined the group</>;
+                    case "leave":   return <><span className="font-semibold text-zinc-900 dark:text-zinc-100">{user}</span> left the group</>;
+                    case "kick":    return <><span className="font-semibold text-zinc-900 dark:text-zinc-100">{actor}</span> kicked out <span className="font-semibold text-zinc-900 dark:text-zinc-100">{user}</span></>;
+                    case "promote": return <><span className="font-semibold text-zinc-900 dark:text-zinc-100">{actor}</span> promoted <span className="font-semibold text-zinc-900 dark:text-zinc-100">{user}</span> to Admin</>;
+                    case "demote":  return <><span className="font-semibold text-zinc-900 dark:text-zinc-100">{actor}</span> demoted <span className="font-semibold text-zinc-900 dark:text-zinc-100">{user}</span> to Member</>;
+                    default:        return <><span className="font-semibold text-zinc-900 dark:text-zinc-100">{user}</span> performed an action</>;
+                  }
+                };
+
+                return (
+                  <div className="space-y-2">
+                    {visible.map((activity: any, idx: number) => (
+                      <Card
+                        key={idx}
+                        className="rounded-xl border border-zinc-200 py-0 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                        <CardContent className="flex items-center gap-3 px-4 py-3">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
+                            {getActivityIcon(activity.action)}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                              {getActivityMessage(activity)}
+                            </p>
+                          </div>
+                          <span className="shrink-0 text-[10px] font-medium text-zinc-400">
+                            {formatTimeAgo(activity.created_at)}
+                          </span>
+                        </CardContent>
+                      </Card>
+                    ))}
+
+                    {hasMore && (
+                      <div className="flex justify-center pt-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setActivityLimit((prev) => prev + 10)}
+                          className="text-xs font-semibold text-zinc-500 hover:text-orange-600">
+                          Show More
+                          <ChevronDown size={16} className="" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </TabsContent>
           </Tabs>
         </div>

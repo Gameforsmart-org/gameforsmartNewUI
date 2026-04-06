@@ -14,6 +14,8 @@ import { Bell, Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/auth-context";
+import { logGroupActivity } from "@/app/service/group/group.service";
 
 interface DialogApprovalProps {
   groupId: string;
@@ -26,6 +28,7 @@ export default function DialogApproval({ groupId, joinRequests }: DialogApproval
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const router = useRouter();
+  const { profileId } = useAuth();
 
   useEffect(() => {
     if (open) {
@@ -135,6 +138,11 @@ export default function DialogApproval({ groupId, joinRequests }: DialogApproval
         .eq("id", groupId);
 
       if (updateError) throw updateError;
+
+      // Log "join" activity when approved
+      if (decision === "approved" && profileId) {
+        await logGroupActivity(groupId, userId, profileId, "join");
+      }
 
       toast.success(`User ${decision} successfully`);
 

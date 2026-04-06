@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PaginationControlGroup } from "./pagination-group-control";
+import { useGroupActivities } from "@/hooks/useGroupActivities";
 
 export type GroupData = {
   id: string;
@@ -40,6 +41,7 @@ export default function GroupCard({
   const { profileId } = useAuth();
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const { logActivity } = useGroupActivities();
 
   // Optimistic UI state: keys are group IDs, values are 'pending' or 'none'
   const [optimisticStatus, setOptimisticStatus] = useState<Record<string, "pending" | "none">>({});
@@ -80,6 +82,9 @@ export default function GroupCard({
         .eq("id", groupId);
 
       if (error) throw error;
+
+      // Log join activity
+      await logActivity(groupId, profileId, profileId, "join");
 
       toast.success("Successfully joined the group!");
       router.refresh(); // Refresh server data without full reload
