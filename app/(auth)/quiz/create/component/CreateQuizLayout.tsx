@@ -112,6 +112,7 @@ export function CreateQuizLayout() {
                 await quiz.handleExcelImport(file);
                 setTimeout(() => setActiveTab("questions"), 600);
               }}
+              onDownloadTemplate={quiz.downloadExcelTemplate}
             />
           );
         }

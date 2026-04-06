@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { FileSpreadsheet, Upload, CheckCircle2, FileUp } from "lucide-react";
+import { FileSpreadsheet, Upload, CheckCircle2, FileUp, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { QuizFormFields } from "../QuizFormFields";
 import type { QuizFormData } from "../../types";
@@ -11,22 +11,34 @@ interface ImportStepProps {
   onChange: (updates: Partial<QuizFormData>) => void;
   questionsCount: number;
   onImport: (file: File) => void;
+  onDownloadTemplate: () => void;
 }
 
-export function ImportStep({ formData, onChange, questionsCount, onImport }: ImportStepProps) {
+export function ImportStep({ formData, onChange, questionsCount, onImport, onDownloadTemplate }: ImportStepProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       {/* Upload card */}
       <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-        <div className="flex items-center gap-2.5 px-5 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+        <div className="flex justify-between items-center gap-2.5 px-5 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+          <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center text-white">
             <FileSpreadsheet className="w-4 h-4" />
           </div>
           <div>
             <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Import Excel</p>
             <p className="text-[10px] text-green-600 dark:text-green-400 font-semibold">XLSX, XLS Supported</p>
+          </div>
+          </div>
+          <div>
+            <button
+              type="button"
+              onClick={onDownloadTemplate}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-700 hover:border-zinc-300"
+            >
+              <Download className="w-3.5 h-3.5" /> Download Template
+            </button>
           </div>
         </div>
 
