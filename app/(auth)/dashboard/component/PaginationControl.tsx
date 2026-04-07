@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const BASE_BTN =
-  "h-8 w-8 border-slate-200 text-black hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 dark:border-zinc-700 dark:text-white dark:hover:border-orange-400 dark:hover:bg-orange-950/50 dark:hover:text-orange-400";
+  "h-8 w-8 border-slate-200 bg-white text-zinc-700 hover:border-orange-400 hover:bg-orange-500 hover:text-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:text-white";
 
 interface PaginationControlProps {
   totalItems:   number;
@@ -44,8 +44,8 @@ export function PaginationControl({
       variant={currentPage === page ? "default" : "outline"}
       size="icon"
       className={`h-8 w-8 transition-colors ${
-        currentPage === page
-          ? "border-orange-400 bg-orange-400 text-white hover:bg-orange-500"
+         currentPage === page
+          ? "border-orange-500 bg-orange-500 text-white hover:bg-orange-600 hover:border-orange-600"
           : BASE_BTN
       }`}
       onClick={() => onPageChange(page)}

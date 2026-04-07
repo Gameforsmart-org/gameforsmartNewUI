@@ -39,8 +39,8 @@ export function PaginationControlGroup({
       size="icon"
       className={`h-8 w-8 transition-colors ${
         currentPage === page
-          ? "border-orange-400 bg-orange-400 text-white hover:bg-orange-500" // Saat aktif (Halaman sekarang)
-          : "border-slate-200 text-black hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 dark:border-zinc-700 dark:text-white dark:hover:border-orange-400 dark:hover:bg-orange-950/50 dark:hover:text-orange-400" // Saat tidak aktif
+          ? "border-orange-500 bg-orange-500 text-white hover:bg-orange-600 hover:border-orange-600"
+          : "border-slate-200 bg-white text-zinc-700 hover:border-orange-400 hover:bg-orange-500 hover:text-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:text-white"
       }`}
       onClick={() => onPageChange(page)}>
       {page}
@@ -58,7 +58,7 @@ export function PaginationControlGroup({
           }}
           className="flex items-center">
           <Input
-            className="h-8 w-12 px-1 text-center"
+            className="h-8 w-12 border-slate-200 bg-white px-1 text-center text-zinc-700 focus-visible:ring-1 focus-visible:ring-orange-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
             autoFocus
             onBlur={() => {
               setTimeout(() => setActiveInput(null), 200);
@@ -74,7 +74,7 @@ export function PaginationControlGroup({
         key={position}
         variant="ghost"
         size="icon"
-        className="h-8 w-8 border-slate-200 text-black hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 dark:border-zinc-700 dark:text-white dark:hover:border-orange-400 dark:hover:bg-orange-950/50 dark:hover:text-orange-400"
+        className="h-8 w-8 text-zinc-500 hover:bg-orange-500 hover:text-white dark:text-zinc-400 dark:hover:bg-orange-500 dark:hover:text-white"
         onClick={() => {
           setActiveInput(position);
           setJumpPage("");
@@ -91,7 +91,7 @@ export function PaginationControlGroup({
       key="prev"
       variant="outline"
       size="icon"
-      className="h-8 w-8 border-slate-200 text-black hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 dark:border-zinc-700 dark:text-white dark:hover:border-orange-400 dark:hover:bg-orange-950/50 dark:hover:text-orange-400"
+      className="h-8 w-8 border-slate-200 bg-white text-zinc-700 hover:border-orange-400 hover:bg-orange-500 hover:text-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:text-white"
       onClick={() => onPageChange(Math.max(1, currentPage - 1))}
       disabled={currentPage === 1}>
       &lt;
@@ -143,7 +143,7 @@ export function PaginationControlGroup({
       key="next"
       variant="outline"
       size="icon"
-      className="h-8 w-8 border-slate-200 text-black hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 dark:border-zinc-700 dark:text-white dark:hover:border-orange-400 dark:hover:bg-orange-950/50 dark:hover:text-orange-400"
+      className="h-8 w-8 border-slate-200 bg-white text-zinc-700 hover:border-orange-400 hover:bg-orange-500 hover:text-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:text-white"
       onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
       disabled={currentPage === totalPages}>
       &gt;
