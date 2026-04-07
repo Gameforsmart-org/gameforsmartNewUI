@@ -22,7 +22,6 @@ interface QuizGridProps {
   onHost:           (quizId: string) => void;
   onTryout:         (quizId: string) => void;
   onEdit:           (quizId: string) => void;
-  onAnalytic:       (quizId: string) => void;
   onToggleFavorite: (quiz: Quiz) => void;
   onDelete:         (quiz: Quiz) => void;
 }
@@ -37,7 +36,6 @@ export function QuizGrid({
   onHost,
   onTryout,
   onEdit,
-  onAnalytic,
   onToggleFavorite,
   onDelete
 }: QuizGridProps) {
@@ -61,7 +59,6 @@ export function QuizGrid({
             onHost={onHost}
             onTryout={onTryout}
             onEdit={onEdit}
-            onAnalytic={onAnalytic}
             onToggleFavorite={onToggleFavorite}
             onDelete={onDelete}
           />

@@ -112,21 +112,6 @@ export const navItems: NavGroup[] = [
         title: "Evaluation",
         href: "/evaluation",
         icon: ChartBar
-      },
-      {
-        title: "Notifications",
-        href: "/notifications",
-        icon: Bell
-      },
-      {
-        title: "Reports",
-        href: "/reports",
-        icon: Flag
-      },
-      {
-        title: "Profile",
-        href: "/profile",
-        icon: UserCircle2Icon
       }
     ]
   }

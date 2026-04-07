@@ -211,6 +211,13 @@ export async function createGameSession(
       ? quizData.profiles[0]
       : quizData.profiles;
 
+    // Fetch host's location (state_id, city_id)
+    const { data: hostProfile } = await supabase
+      .from("profiles")
+      .select("state_id, city_id, country_id")
+      .eq("id", currentProfileId)
+      .single();
+
     const gamePin = Math.floor(100000 + Math.random() * 900000).toString();
 
     const { data: newSession, error: sessionError } = await supabase
@@ -226,6 +233,9 @@ export async function createGameSession(
         total_time_minutes:   5,
         current_questions:    [],
         application:          "Quiz V2",
+        state_id:             hostProfile?.state_id || null,
+        city_id:              hostProfile?.city_id || null,
+        country_id:           hostProfile?.country_id || null,
         quiz_detail: {
           title:            quizData.title,
           description:      quizData.description || null,
