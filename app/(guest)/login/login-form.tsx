@@ -176,7 +176,7 @@ export default function LoginForm() {
       // Store target path in cookie (read by server at /auth/callback)
       document.cookie = `auth-redirect=${encodeURIComponent(nextPath)}; path=/; max-age=3600; SameSite=Lax`;
 
-      const callbackUrl = `${window.location.origin}/auth/callback`;
+      const callbackUrl = `${window.location.origin}/callback`;
 
       console.log("🔥 Login - clean callbackUrl:", callbackUrl);
       console.log("🔥 Login - nextPath stored in cookie:", nextPath);
