@@ -129,7 +129,7 @@ export function ActionButtons({
         <Button
           size="sm"
           variant="outline"
-          className="h-6 px-3 text-[11px]"
+          className="h-6 px-3 text-[11px] bg-green-700 text-white hover:bg-green-800 hover:text-white"
           onClick={() => onAction(item, "accepted")}
           disabled={isLoading}
         >
@@ -137,7 +137,7 @@ export function ActionButtons({
         </Button>
         <Button
           size="sm"
-          variant="destructive"
+          variant="outline"
           className="h-6 px-3 text-[11px]"
           onClick={() => onAction(item, "declined")}
           disabled={isLoading}
@@ -151,8 +151,9 @@ export function ActionButtons({
   return (
     <div className="mt-2 flex items-center gap-2">
       <Button
+        variant="outline"
         size="sm"
-        className="button-orange h-7 px-4 text-[11px]"
+        className="h-7 px-4 text-[11px] bg-green-700 text-white hover:bg-green-800 hover:text-white"
         onClick={() => onAction(item, "accepted")}
         disabled={isLoading}
       >
@@ -160,8 +161,8 @@ export function ActionButtons({
       </Button>
       <Button
         size="sm"
-        variant="ghost"
-        className="h-7 px-3 text-[11px] font-semibold text-zinc-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+        variant="outline"
+        className="h-7 px-3 text-[11px]"
         onClick={() => onAction(item, "declined")}
         disabled={isLoading}
       >
