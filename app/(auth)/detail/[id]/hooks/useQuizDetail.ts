@@ -151,7 +151,7 @@ export function useQuizDetail(quizId: string) {
   };
 
   // ── Derived ─────────────────────────────────────────────────
-  const isCreator   = !!(user?.id && quiz?.creator_id === user.id);
+  const isCreator   = !!(profileId && quiz?.creator_id === profileId);
   const questionCount = quiz?.questions?.length ?? 0;
 
   return {

@@ -16,6 +16,7 @@ import { useQuizDetail } from "./hooks/useQuizDetail";
 import { QuizDetailSkeleton } from "./components/Quizdetailskeleton";
 import { QuestionsPreview } from "./components/Questionspreview";
 import { QuizInfoCard } from "./components/Quizinfocard";
+import QuizChart from "./components/Quizchart";
 
 export default function QuizDetailPage() {
   const router  = useRouter();
@@ -106,11 +107,18 @@ export default function QuizDetailPage() {
           onShare={handleShare}
         />
 
-        {/* ── Questions preview ────────────────────────── */}
-        <QuestionsPreview
-          questions={quiz.questions}
-          questionCount={questionCount}
-        />
+         {/* ── Chart ────────────────────────── */}
+        <QuizChart quizId={quizId} />
+
+        {/* ── Questions preview (creator only) ─────────── */}
+        {isCreator && (
+          <QuestionsPreview
+            questions={quiz.questions}
+            questionCount={questionCount}
+          />
+        )}
+
+       
 
       </div>
     </div>
