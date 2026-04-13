@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/auth-context";
 import { Calendar, EllipsisVertical, Globe, LogIn, LogOut, ArrowBigUp, ArrowBigDown, UserX, Users, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
-import { PaginationControl } from "./pagination-control";
+import { PaginationControl } from "@/components/pagination-control";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";

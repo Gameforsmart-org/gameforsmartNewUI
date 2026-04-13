@@ -6,8 +6,7 @@ import { redirect } from "next/navigation";
 export async function generateMetadata() {
   return generateMeta({
     title: "Friends",
-    description:
-      "A friends dashboard",
+    description: "A friends dashboard",
     canonical: "/friends"
   });
 }
@@ -22,7 +21,6 @@ export default async function Page() {
     redirect("/login?redirect=/friends");
   }
 
-  // Get profile id
   const { data: profile } = await supabase
     .from("profiles")
     .select("id")

@@ -433,7 +433,7 @@ export default function WaitingRoom({ sessionId }: WaitingRoomProps) {
 
   return (
     <div className="base-background relative overflow-y-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_480px] min-h-[90vh]">
+      <div className="grid min-h-[90vh] grid-cols-1 lg:grid-cols-[1fr_480px]">
         {/* Left Column: Stats & Participants */}
         <div className="order-2 space-y-4 p-4 lg:order-1">
           <Card
@@ -556,23 +556,23 @@ export default function WaitingRoom({ sessionId }: WaitingRoomProps) {
         </div>
 
         {/* Right Column: Controls & QR */}
-        <div className=" order-1 p-4 pb-0 lg:order-2 lg:pb-4 lg:pl-0">
+        <div className="order-1 p-4 pb-0 lg:order-2 lg:pb-4 lg:pl-0">
           <Card
-            className="card sticky top-0 h-fit border-0 shadow-sm lg:top-4 lg:order-2 py-0"
+            className="card sticky top-0 h-fit border-0 py-0 shadow-sm lg:top-4 lg:order-2"
             style={
               { "--card-border-w": "1px", "--border-color": "var(--border)" } as React.CSSProperties
             }>
             <CardContent className="relative flex h-full flex-col gap-6 py-6">
               {/* Settings */}
-                <Button
-                  variant="ghost"
-                  className="absolute size-10 right-4 top-4 p-0 text-orange-300 hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-zinc-800"
-                  onClick={() => {
-                    router.push(`/host/${sessionId}/settings?from=room`);
-                  }}
-                  title="Game Settings">
-                  <Settings className="!h-7 !w-7"/>
-                </Button>
+              <Button
+                variant="ghost"
+                className="absolute top-4 right-4 size-10 p-0 text-orange-300 hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-zinc-800"
+                onClick={() => {
+                  router.push(`/host/${sessionId}/settings?from=room`);
+                }}
+                title="Game Settings">
+                <Settings className="!h-7 !w-7" />
+              </Button>
 
               {/* Game PIN */}
               <div className="space-y-2 text-center">
@@ -602,10 +602,15 @@ export default function WaitingRoom({ sessionId }: WaitingRoomProps) {
                   </DialogTrigger>
                   <DialogContent className="flex flex-col items-center sm:max-w-[620px]">
                     <DialogHeader>
-                      <DialogTitle className="text-orange-600">Join Game</DialogTitle>
+                      <DialogTitle className="text-orange-600">
+                        Join Game {gameSession.game_pin}
+                      </DialogTitle>
                     </DialogHeader>
                     <div className="rounded-xl border border-orange-100 bg-white p-4 shadow-lg">
                       <QRCodeSVG value={joinLink} size={540} level="H" />
+                    </div>
+                    <div className="text-xl font-medium text-orange-800 dark:text-zinc-400">
+                      {joinLink}
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -624,7 +629,7 @@ export default function WaitingRoom({ sessionId }: WaitingRoomProps) {
                 <div className="flex flex-col gap-3">
                   <Button
                     size="lg"
-                    className="button-orange h-14 w-full text-lg font-bold py-2"
+                    className="button-orange h-14 w-full py-2 text-lg font-bold"
                     onClick={handleStartGame}>
                     <Play className="mr-2 fill-current" /> Start Game
                   </Button>

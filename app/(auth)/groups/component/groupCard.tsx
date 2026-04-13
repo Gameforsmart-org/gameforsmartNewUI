@@ -10,7 +10,7 @@ import { Calendar, EyeOff, Lock, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { PaginationControlGroup } from "./pagination-group-control";
+import { PaginationControl } from "@/components/pagination-control";
 import { useGroupActivities } from "@/hooks/useGroupActivities";
 
 export type GroupData = {
@@ -328,7 +328,7 @@ export default function GroupCard({
 
       {totalItems > ITEMS_PER_PAGE && (
         <div className="flex justify-center pt-4">
-          <PaginationControlGroup
+          <PaginationControl
             totalItems={totalItems}
             currentPage={currentPage}
             onPageChange={setCurrentPage}
