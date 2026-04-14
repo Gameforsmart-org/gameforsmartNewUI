@@ -153,6 +153,14 @@ export async function middleware(request: NextRequest) {
     //   return NextResponse.redirect(new URL("/dashboard", request.url));
     // }
 
+    // Redirect authenticated users away from login/register
+    if (pathname.startsWith("/login") || pathname.startsWith("/register")) {
+      const hasSsoCookie = request.cookies.has("gfs-session");
+      if (user || hasSsoCookie) {
+        return NextResponse.redirect(new URL("/callback", request.url));
+      }
+    }
+
     // Protect admin routes - require admin role
     if (pathname.startsWith("/admin")) {
       // Note: Client-side protection will be handled by the admin page itself
@@ -193,6 +201,10 @@ export const config = {
   matcher: [
     // Root path (to handle redirect for auth users)
     "/",
+
+    // Authentication pages (to redirect logged in users)
+    "/login",
+    "/register",
 
     // API routes (for CORS & security)
     "/api/:path*",

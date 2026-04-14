@@ -16,10 +16,18 @@ export function syncSessionCookie(tokens: { access_token: string; refresh_token:
   const isHttps = window.location.protocol === 'https:';
 
   if (!tokens) {
-    // Hapus cookie
-    let cookieStr = `gfs-session=; path=/; max-age=0`;
-    if (isGfs) cookieStr += `; domain=.gameforsmart.com`;
-    document.cookie = cookieStr;
+    // Hapus cookie dengan parameter yang persis sama saat dibuat agar browser (Chrome/Safari) mengizinkan penghapusan
+    const parts = [
+        `gfs-session=`,
+        `path=/`,
+        `expires=Thu, 01 Jan 1970 00:00:00 GMT`,
+        `max-age=0`,
+        `SameSite=Lax`
+    ];
+    if (isGfs) parts.push(`domain=.gameforsmart.com`);
+    if (isHttps) parts.push(`Secure`);
+    
+    document.cookie = parts.join('; ');
     return;
   }
 

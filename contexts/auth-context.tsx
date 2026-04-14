@@ -111,33 +111,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initSession = async () => {
       let { data: { session } } = await supabase.auth.getSession();
 
+      // Deteksi Zombie Session: Sesi lokal ada, tapi SSO cookie GA ADA (berarti sudah logout di app lain)
+      const cookieSession = getSessionFromCookie();
+      if (session && !cookieSession) {
+        console.log('[SSO] Terdeteksi sisa sesi lokal padahal SSO cookie kosong. Menghapus sesi...');
+        await supabase.auth.signOut();
+        session = null;
+      }
+
       // SSO: Coba pulihkan sesi dari shared cookie jika tidak ada
-      if (!session) {
-        const cookieSession = getSessionFromCookie();
-        if (cookieSession) {
-          console.log('[SSO] Mencoba pulihkan sesi dari shared cookie (setSession)...');
-          // Pakai setSession untuk menghindari rotasi token
-          const { data, error } = await supabase.auth.setSession(cookieSession);
-          if (!error && data.session) {
-            session = data.session;
-            console.log('[SSO] Sesi berhasil dipulihkan! Memuat ulang halaman untuk memicu Server Components...');
-            window.location.reload();
-            return; // Hentikan eksekusi selanjutnya karena halaman akan reload
-          } else {
-            console.warn('[SSO] Token expired, menghapus cookie');
-            syncSessionCookie(null);
-          }
+      if (!session && cookieSession) {
+        console.log('[SSO] Mencoba pulihkan sesi dari shared cookie (setSession)...');
+        // Pakai setSession untuk menghindari rotasi token
+        const { data, error } = await supabase.auth.setSession(cookieSession);
+        if (!error && data.session) {
+          session = data.session;
+          console.log('[SSO] Sesi berhasil dipulihkan! Memuat ulang halaman untuk memicu Server Components...');
+          window.location.reload();
+          return; // Hentikan eksekusi selanjutnya karena halaman akan reload
+        } else {
+          console.warn('[SSO] Token expired, menghapus cookie');
+          syncSessionCookie(null);
         }
       }
 
       setUser(session?.user ?? null);
       if (session?.user && session) {
-        // Sync tokens ke shared cookie
+        // Hanya sync ulang jika origin kita benar-benar punya session aktif yang valid
         syncSessionCookie({
           access_token: session.access_token,
           refresh_token: session.refresh_token
         });
         await fetchProfile(session.user.id);
+
+        // SSO REDIRECT: Jika sudah login tapi ada di /login atau /register, lempar ke /callback
+        const pathname = window.location.pathname;
+        if (pathname === "/login" || pathname === "/register") {
+          console.log('[SSO] User sudah login, mengalihkan dari halaman auth ke /callback...');
+          window.location.href = "/callback";
+        }
       }
       setLoading(false);
       setInitialLoad(false);
@@ -172,6 +184,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setProfile(null);
         setProfileId(null);
+
+        // FORCE REDIRECT: Jika sedang di dashboard/protected, tendang ke login
+        if (typeof window !== 'undefined') {
+          const pathname = window.location.pathname;
+          const isProtected = ["/dashboard", "/host", "/quiz", "/learn", "/tryout", "/join", "/stat"].some(p => pathname.startsWith(p));
+          if (isProtected) {
+            window.location.href = "/login";
+          }
+        }
       }
       
       if (!initialLoad) {
@@ -223,41 +244,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []); // Kosongkan dependency agar tidak subscribe berulang kali
 
-  useEffect(() => {
-    // Get initial session
-    const initSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        // localStorage.setItem("user_id", session.user.id); // REMOVE: We want profile.id, not auth user id
-        await fetchProfile(session.user.id);
-      }
-      setLoading(false);
-      setInitialLoad(false);
-    };
 
-    initSession();
-
-    // Listen for auth changes
-    const {
-      data: { subscription }
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        // localStorage.setItem("user_id", session.user.id); // REMOVE: We want profile.id, not auth user id
-        fetchProfile(session.user.id);
-      } else {
-        localStorage.removeItem("user_id"); // Clear from localStorage
-        setProfile(null);
-        setProfileId(null);
-      }
-      if (!initialLoad) {
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
