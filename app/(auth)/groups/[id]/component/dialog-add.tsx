@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { toast } from "sonner";
+import { Loader2, Search } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,11 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
-import { supabase } from "@/lib/supabase";
+import { searchProfiles } from "../../services/groups.service";
 import { createNotification } from "@/app/service/notification";
-import { Loader2, Search } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
 
 interface DialogAddProps {
   groupId: string;
@@ -31,44 +31,16 @@ export default function DialogAdd({ groupId }: DialogAddProps) {
   const { profileId } = useAuth();
 
   const handleSearch = async () => {
-    if (!inputValue.trim()) {
-      toast.error("Please enter a search term");
-      return;
-    }
+    if (!inputValue.trim()) return toast.error("Please enter a search term");
 
     setLoading(true);
     setHasSearched(true);
-    // Clear previous results to avoid confusion
     setSearchResults([]);
 
     try {
-      const searchTerm = `%${inputValue}%`;
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*, state:states(name), city:cities(name)")
-        .or(
-          `nickname.ilike.${searchTerm},fullname.ilike.${searchTerm},username.ilike.${searchTerm}`
-        )
-        .limit(20);
-
-      // Simple fallback logic if relations fail (same as before)
-      if (error) {
-        console.warn("Relation fetch failed, retrying without relations", error);
-        const { data: retryData, error: retryError } = await supabase
-          .from("profiles")
-          .select("*")
-          .or(
-            `nickname.ilike.${searchTerm},fullname.ilike.${searchTerm},username.ilike.${searchTerm}`
-          )
-          .limit(20);
-
-        if (retryError) throw retryError;
-        setSearchResults(retryData || []);
-      } else {
-        setSearchResults(data || []);
-      }
+      const results = await searchProfiles(inputValue);
+      setSearchResults(results);
     } catch (error: any) {
-      console.error("Search error:", error);
       toast.error("Failed to search users");
     } finally {
       setLoading(false);
@@ -76,24 +48,11 @@ export default function DialogAdd({ groupId }: DialogAddProps) {
   };
 
   const handleInvite = async (userId: string) => {
-    if (!profileId) {
-      toast.error("You must be logged in to invite users");
-      return;
-    }
-
-    // Determine current group ID from prop
-    if (!groupId) {
-      toast.error("Group ID is missing");
-      return;
-    }
+    if (!profileId) return toast.error("You must be logged in to invite users");
+    if (!groupId) return toast.error("Group ID is missing");
 
     setInvitingId(userId);
-
     try {
-      // Check if already invited? (Optional, but good UX. Skipping for now to follow strict instructions)
-      // Check if already member? (Optional)
-
-      
       await createNotification({
         user_id: userId,
         actor_id: profileId,
@@ -106,14 +65,8 @@ export default function DialogAdd({ groupId }: DialogAddProps) {
         content: null
       });
 
-
-
       toast.success("Invitation sent successfully");
-
-      // Optionally remove from list or mark as invited
-      // For now, we just keep it
     } catch (error: any) {
-      console.error("Invite error:", error);
       toast.error("Failed to send invitation");
     } finally {
       setInvitingId(null);
@@ -131,17 +84,14 @@ export default function DialogAdd({ groupId }: DialogAddProps) {
         </DialogHeader>
 
         <div className="max-w-full min-w-0 space-y-5 p-6">
+          {/* Search Input */}
           <div className="relative">
             <Input
               placeholder="Search by nickname, fullname, or username..."
               className="input"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSearch();
-                }
-              }}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
             <Button
               variant="default"
@@ -152,6 +102,7 @@ export default function DialogAdd({ groupId }: DialogAddProps) {
             </Button>
           </div>
 
+          {/* Results */}
           <div className="max-h-60 overflow-y-auto pr-2">
             {loading ? (
               <div className="flex justify-center py-4 text-orange-500">
@@ -161,10 +112,8 @@ export default function DialogAdd({ groupId }: DialogAddProps) {
               <div className="py-4 text-center text-sm text-gray-500">No users found.</div>
             ) : (
               searchResults.map((profile) => {
-                const isInviting = invitingId === profile.id;
-
-                // Exclude self from list?
                 if (profile.id === profileId) return null;
+                const isInviting = invitingId === profile.id;
 
                 return (
                   <div
@@ -200,11 +149,11 @@ export default function DialogAdd({ groupId }: DialogAddProps) {
 
                     <Button
                       size="sm"
-                      variant={"outline"}
+                      variant="outline"
                       className="button-orange"
                       onClick={() => handleInvite(profile.id)}
                       disabled={isInviting || loading}>
-                      {isInviting ? <Loader2 className="h-4 w-4 animate-spin" /> : "invite"}
+                      {isInviting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Invite"}
                     </Button>
                   </div>
                 );

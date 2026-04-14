@@ -2,6 +2,8 @@ import { generateMeta } from "@/lib/utils";
 import { createClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
 import Header from "./component/header";
+import { getAllGroups } from "./services/groups.service";
+import type { GroupData } from "./types";
 
 export async function generateMetadata() {
   return generateMeta({
@@ -22,7 +24,6 @@ export default async function Page() {
     redirect("/login?redirect=/groups");
   }
 
-  // Get profile id
   const { data: profile } = await supabase
     .from("profiles")
     .select("id")
@@ -33,48 +34,31 @@ export default async function Page() {
     return <div>Profile not found</div>;
   }
 
-  // Fetch all groups with creator details
-  const { data: allGroups, error } = await supabase.from("groups").select(`
-      *,
-      creator:creator_id (
-        fullname,
-        nickname,
-        username,
-        avatar_url,
-        city:cities (name),
-        state:states (name)
-      )
-    `);
-
-  if (error) {
+  let allGroups: GroupData[] = [];
+  try {
+    allGroups = await getAllGroups();
+  } catch (error) {
     console.error("Error fetching groups:", error);
   }
 
-  const discoverGroups: any[] = [];
-  const myGroups: any[] = [];
+  const discoverGroups: GroupData[] = [];
+  const myGroups: GroupData[] = [];
 
-  if (allGroups) {
-    allGroups.forEach((group: any) => {
-      const members = Array.isArray(group.members) ? group.members : [];
-      // Check if user is member (assuming structure { user_id: ... } or { id: ... })
-      // If members is just array of strings (IDs), handle that too.
-      const isMember = members.some((m: any) => {
-        if (typeof m === "string") return m === profile.id;
-        return m.user_id === profile.id || m.id === profile.id;
-      });
-
-      const status = group.settings?.status;
-
-      if (isMember) {
-        myGroups.push(group);
-      } else {
-        // Discover: public or private, and NOT member
-        if (status === "public" || status === "private") {
-          discoverGroups.push(group);
-        }
-      }
+  allGroups.forEach((group) => {
+    const members = Array.isArray(group.members) ? group.members : [];
+    const isMember = members.some((m: any) => {
+      if (typeof m === "string") return m === profile.id;
+      return m.user_id === profile.id || m.id === profile.id;
     });
-  }
+
+    const status = group.settings?.status;
+
+    if (isMember) {
+      myGroups.push(group);
+    } else if (status === "public" || status === "private") {
+      discoverGroups.push(group);
+    }
+  });
 
   return <Header discoverGroups={discoverGroups} myGroups={myGroups} />;
 }

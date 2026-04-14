@@ -1,173 +1,89 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useAuth } from "@/contexts/auth-context";
-import { supabase } from "@/lib/supabase";
-import { Calendar, EyeOff, Lock, Users } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from "sonner";
 import { PaginationControl } from "@/components/pagination-control";
+import { useAuth } from "@/contexts/auth-context";
 import { useGroupActivities } from "@/hooks/useGroupActivities";
+import { Calendar, EyeOff, Lock, Users } from "lucide-react";
+import {
+  joinGroup,
+  requestJoinGroup,
+  cancelJoinRequest
+} from "../services/groups.service";
+import type { GroupData } from "../types";
 
-export type GroupData = {
-  id: string;
-  name: string;
-  category: string | null;
-  members: any[]; // JSONB
-  join_requests: any[]; // JSONB
-  settings: any; // JSONB
-  created_at: string | null;
-  creator: {
-    fullname: string | null;
-    nickname: string | null;
-    username: string | null;
-    avatar_url?: string | null;
-    city?: { name: string } | null;
-    state?: { name: string } | null;
-  } | null;
-};
+const ITEMS_PER_PAGE = 12;
 
-export default function GroupCard({
-  groups,
-  isMyGroup = false
-}: {
+interface GroupCardProps {
   groups: GroupData[];
   isMyGroup?: boolean;
-}) {
+}
+
+export default function GroupCard({ groups, isMyGroup = false }: GroupCardProps) {
   const { profileId } = useAuth();
   const router = useRouter();
-  const [loadingId, setLoadingId] = useState<string | null>(null);
   const { logActivity } = useGroupActivities();
 
-  // Optimistic UI state: keys are group IDs, values are 'pending' or 'none'
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const [optimisticStatus, setOptimisticStatus] = useState<Record<string, "pending" | "none">>({});
-
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 12;
 
-  const handleJoin = async (groupId: string, currentMembers: any[]) => {
-    if (!profileId) {
-      toast.error("You must be logged in to join");
-      return;
-    }
+  const handleJoin = async (group: GroupData) => {
+    if (!profileId) return toast.error("You must be logged in to join");
 
-    setLoadingId(groupId);
-
+    setLoadingId(group.id);
     try {
-      const newMember = {
-        role: "member",
-        user_id: profileId
-      };
-
-      const members = Array.isArray(currentMembers) ? currentMembers : [];
-      const isAlreadyMember = members.some(
-        (m: any) => m.user_id === profileId || m.id === profileId
-      );
-
-      if (isAlreadyMember) {
-        toast.info("You are already a member");
-        setLoadingId(null);
-        return;
-      }
-
-      const updatedMembers = [...members, newMember];
-
-      const { error } = await supabase
-        .from("groups")
-        .update({ members: updatedMembers })
-        .eq("id", groupId);
-
-      if (error) throw error;
-
-      // Log join activity
-      await logActivity(groupId, profileId, profileId, "join");
-
+      await joinGroup(group.id, profileId);
+      await logActivity(group.id, profileId, profileId, "join");
       toast.success("Successfully joined the group!");
-      router.refresh(); // Refresh server data without full reload
+      router.refresh();
     } catch (error: any) {
-      console.error("Join error:", error);
-      toast.error(error.message || "Failed to join group");
+      if (error.message === "already_member") {
+        toast.info("You are already a member");
+      } else {
+        toast.error(error.message || "Failed to join group");
+      }
     } finally {
       setLoadingId(null);
     }
   };
 
-  const handleRequestJoin = async (groupId: string, currentRequests: any[]) => {
-    if (!profileId) {
-      toast.error("You must be logged in to request join");
-      return;
-    }
+  const handleRequestJoin = async (group: GroupData) => {
+    if (!profileId) return toast.error("You must be logged in to request join");
 
-    setLoadingId(groupId);
-
+    setLoadingId(group.id);
     try {
-      const requests = Array.isArray(currentRequests) ? currentRequests : [];
-
-      const alreadyRequested = requests.some(
-        (r: any) => r.user_id === profileId && r.status === "pending"
-      );
-      if (alreadyRequested) {
-        toast.info("You have already sent a request");
-        setLoadingId(null);
-        return;
-      }
-
-      const newRequest = {
-        status: "pending",
-        user_id: profileId,
-        requested_at: new Date().toISOString()
-      };
-
-      const updatedRequests = [...requests, newRequest];
-
-      const { error } = await supabase
-        .from("groups")
-        .update({ join_requests: updatedRequests })
-        .eq("id", groupId);
-
-      if (error) throw error;
-
-      // Optimistic update
-      setOptimisticStatus((prev) => ({ ...prev, [groupId]: "pending" }));
+      await requestJoinGroup(group.id, profileId);
+      setOptimisticStatus((prev) => ({ ...prev, [group.id]: "pending" }));
       toast.success("Join request sent!");
       router.refresh();
     } catch (error: any) {
-      console.error("Request join error:", error);
-      toast.error(error.message || "Failed to send request");
+      if (error.message === "already_requested") {
+        toast.info("You have already sent a request");
+      } else {
+        toast.error(error.message || "Failed to send request");
+      }
     } finally {
       setLoadingId(null);
     }
   };
 
-  const handleCancelRequest = async (groupId: string, currentRequests: any[]) => {
+  const handleCancelRequest = async (group: GroupData) => {
     if (!profileId) return;
 
-    setLoadingId(groupId);
-
+    setLoadingId(group.id);
     try {
-      const requests = Array.isArray(currentRequests) ? currentRequests : [];
-
-      const updatedRequests = requests.filter(
-        (r: any) => !(r.user_id === profileId && r.status === "pending")
-      );
-
-      const { error } = await supabase
-        .from("groups")
-        .update({ join_requests: updatedRequests })
-        .eq("id", groupId);
-
-      if (error) throw error;
-
-      // Optimistic update
-      setOptimisticStatus((prev) => ({ ...prev, [groupId]: "none" }));
+      await cancelJoinRequest(group.id, profileId);
+      setOptimisticStatus((prev) => ({ ...prev, [group.id]: "none" }));
       toast.success("Request cancelled");
       router.refresh();
     } catch (error: any) {
-      console.error("Cancel request error:", error);
       toast.error(error.message || "Failed to cancel request");
     } finally {
       setLoadingId(null);
@@ -192,17 +108,12 @@ export default function GroupCard({
           const status = group.settings?.status || "public";
           const adminsApproval = group.settings?.admins_approval || false;
 
-          // Check if user already requested (with optimistic override)
-          let isPending = false;
-          if (optimisticStatus[group.id]) {
-            isPending = optimisticStatus[group.id] === "pending";
-          } else {
-            isPending =
-              Array.isArray(group.join_requests) &&
+          const isPending = optimisticStatus[group.id]
+            ? optimisticStatus[group.id] === "pending"
+            : Array.isArray(group.join_requests) &&
               group.join_requests.some(
                 (r: any) => r.user_id === profileId && r.status === "pending"
               );
-          }
 
           const createdDate = group.created_at
             ? new Date(group.created_at).toLocaleDateString("en-GB", {
@@ -216,11 +127,11 @@ export default function GroupCard({
             <Card key={group.id} className="group border-card-vertical rounded-2xl pt-0">
               <div className="horizontal-line" />
               <CardContent className="space-y-5 px-6">
+                {/* Category & Status Icon */}
                 <div className="flex items-center justify-between">
                   <Badge className="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-600 hover:bg-orange-200 dark:bg-orange-900 dark:hover:bg-orange-800">
                     {group.category || "General"}
                   </Badge>
-
                   <div className="flex items-center gap-2 text-gray-500">
                     {status === "private" ? (
                       <Lock size={16} />
@@ -231,13 +142,11 @@ export default function GroupCard({
                 </div>
 
                 {/* Title */}
-                <div>
-                  <h3 className="line-clamp-1 text-lg font-semibold" title={group.name}>
-                    {group.name}
-                  </h3>
-                </div>
+                <h3 className="line-clamp-1 text-lg font-semibold" title={group.name}>
+                  {group.name}
+                </h3>
 
-                {/* Owner */}
+                {/* Creator */}
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10 border-2 border-lime-400">
                     <AvatarImage src={group.creator?.avatar_url || ""} />
@@ -269,9 +178,8 @@ export default function GroupCard({
                   </div>
                 </div>
 
-                {/* Footer Section: Stats & Button sejajar */}
+                {/* Footer: Stats & Action */}
                 <div className="flex items-center justify-between gap-4 border-t border-slate-50 pt-2 dark:border-zinc-800">
-                  {/* Stats - Di pindah ke sini */}
                   <div className="text-muted-foreground flex flex-col gap-1 text-[11px] sm:text-xs">
                     <div className="flex items-center gap-1.5">
                       <Users size={14} className="text-slate-400" />
@@ -283,7 +191,6 @@ export default function GroupCard({
                     </div>
                   </div>
 
-                  {/* Button Section */}
                   <div className="flex-shrink-0">
                     {isMyGroup ? (
                       <Button
@@ -297,7 +204,7 @@ export default function GroupCard({
                         <Button
                           variant="outline"
                           className="h-9 rounded-md border-red-200 px-4 text-xs text-red-500 hover:bg-red-50 hover:text-red-600 dark:bg-red-950 dark:text-red-600 dark:hover:bg-red-900/50 dark:hover:text-red-500"
-                          onClick={() => handleCancelRequest(group.id, group.join_requests)}
+                          onClick={() => handleCancelRequest(group)}
                           disabled={loadingId === group.id}>
                           {loadingId === group.id ? "..." : "Cancel"}
                         </Button>
@@ -305,7 +212,7 @@ export default function GroupCard({
                         <Button
                           variant="outline"
                           className="h-9 rounded-md px-4 text-xs"
-                          onClick={() => handleRequestJoin(group.id, group.join_requests)}
+                          onClick={() => handleRequestJoin(group)}
                           disabled={loadingId === group.id}>
                           {loadingId === group.id ? "..." : "Request"}
                         </Button>
@@ -313,7 +220,7 @@ export default function GroupCard({
                     ) : (
                       <Button
                         className="button-orange h-9 px-4 text-sm"
-                        onClick={() => handleJoin(group.id, group.members)}
+                        onClick={() => handleJoin(group)}
                         disabled={loadingId === group.id}>
                         {loadingId === group.id ? "..." : "Join"}
                       </Button>

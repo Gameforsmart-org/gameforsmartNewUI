@@ -575,11 +575,14 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
                               value={stats.percentCorrect}
                               className="h-2"
                               indicatorColor={
-                                stats.percentCorrect > 75
+                                stats.percentCorrect == 100
                                   ? "bg-green-500"
-                                  : stats.percentCorrect > 40
+                                  : stats.percentCorrect >= 67
+                                  
                                     ? "bg-yellow-500"
-                                    : "bg-red-500"
+                                    : stats.percentCorrect >= 34
+                                      ? "bg-orange-600"
+                                      : "bg-red-600"
                               }
                             />
                             {/* <div className="text-muted-foreground flex justify-between text-[10px]">

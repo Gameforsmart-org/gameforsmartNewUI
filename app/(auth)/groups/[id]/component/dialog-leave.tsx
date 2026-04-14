@@ -1,5 +1,10 @@
 "use client";
 
+import { useState } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,13 +15,10 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { useAuth } from "@/contexts/auth-context";
-import { supabase } from "@/lib/supabase";
-import { ArrowBigDown, ArrowBigUp, LogOut } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from "sonner";
+import { leaveGroup } from "../../services/groups.service";
 import { logGroupActivity } from "@/app/service/group/group.service";
+
+// ─── DialogLeave ─────────────────────────────────────────────────────────────
 
 interface DialogLeaveProps {
   groupId: string;
@@ -33,24 +35,8 @@ export function DialogLeave({ groupId, currentMembers }: DialogLeaveProps) {
     if (!profileId) return;
 
     setLoading(true);
-
     try {
-      const members = Array.isArray(currentMembers) ? currentMembers : [];
-
-      // Filter out the current user
-      const updatedMembers = members.filter((m: any) => {
-        const memberId = typeof m === "string" ? m : m.user_id || m.id;
-        return memberId !== profileId;
-      });
-
-      const { error } = await supabase
-        .from("groups")
-        .update({ members: updatedMembers })
-        .eq("id", groupId);
-
-      if (error) throw error;
-
-      // Log leave activity
+      await leaveGroup(groupId, profileId, currentMembers);
       await logGroupActivity(groupId, profileId, profileId, "leave");
 
       toast.success("You have left the group");
@@ -58,7 +44,6 @@ export function DialogLeave({ groupId, currentMembers }: DialogLeaveProps) {
       router.push("/groups");
       router.refresh();
     } catch (error: any) {
-      console.error("Leave error:", error);
       toast.error(error.message || "Failed to leave group");
     } finally {
       setLoading(false);
@@ -91,6 +76,8 @@ export function DialogLeave({ groupId, currentMembers }: DialogLeaveProps) {
   );
 }
 
+// ─── DialogAction (kick / promote / demote) ──────────────────────────────────
+
 interface DialogActionProps {
   action: "kick" | "promote" | "demote";
   userName: string;
@@ -112,11 +99,13 @@ export function DialogAction({ action, userName, onConfirm, children }: DialogAc
     }
   };
 
-  const title =
-    action === "kick" ? "Kick User" : action === "promote" ? "Promote User" : "Demote User";
-  const actionText = action === "kick" ? "Kick" : action === "promote" ? "Promote" : "Demote";
-  const actionTextIng =
-    action === "kick" ? "Kicking..." : action === "promote" ? "Promoting..." : "Demoting...";
+  const labels: Record<typeof action, { title: string; btn: string; btnIng: string }> = {
+    kick:    { title: "Kick User",    btn: "Kick",    btnIng: "Kicking..." },
+    promote: { title: "Promote User", btn: "Promote", btnIng: "Promoting..." },
+    demote:  { title: "Demote User",  btn: "Demote",  btnIng: "Demoting..." }
+  };
+
+  const { title, btn, btnIng } = labels[action];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -139,7 +128,7 @@ export function DialogAction({ action, userName, onConfirm, children }: DialogAc
             onClick={handleConfirm}
             disabled={loading}
             className={action !== "kick" ? "button-orange" : ""}>
-            {loading ? actionTextIng : actionText}
+            {loading ? btnIng : btn}
           </Button>
         </DialogFooter>
       </DialogContent>

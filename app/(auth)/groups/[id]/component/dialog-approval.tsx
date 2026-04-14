@@ -1,5 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Bell, Check, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,12 +13,8 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { supabase } from "@/lib/supabase";
-import { Bell, Check, X } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { useAuth } from "@/contexts/auth-context";
+import { handleJoinRequest, getProfilesByIds } from "../../services/groups.service";
 import { logGroupActivity } from "@/app/service/group/group.service";
 
 interface DialogApprovalProps {
@@ -31,45 +31,35 @@ export default function DialogApproval({ groupId, joinRequests }: DialogApproval
   const { profileId } = useAuth();
 
   useEffect(() => {
-    if (open) {
-      fetchProfiles();
-    }
+    if (open) fetchProfiles();
   }, [open, joinRequests]);
 
   const fetchProfiles = async () => {
     setLoading(true);
     try {
-      const requests = Array.isArray(joinRequests) ? joinRequests : [];
-      const pendingRequests = requests.filter((r: any) => r.status === "pending");
+      const pending = (Array.isArray(joinRequests) ? joinRequests : []).filter(
+        (r: any) => r.status === "pending"
+      );
 
-      if (pendingRequests.length === 0) {
+      if (pending.length === 0) {
         setEnhancedRequests([]);
         return;
       }
 
-      const userIds = pendingRequests.map((r: any) =>
+      const userIds = pending.map((r: any) =>
         typeof r.user_id === "string" ? r.user_id : r.user_id?.id
       );
 
-      const { data: profiles, error } = await supabase
-        .from("profiles")
-        .select("id, fullname, nickname, username, avatar_url")
-        .in("id", userIds);
+      const profiles = await getProfilesByIds(userIds);
 
-      if (error) throw error;
-
-      const merged = pendingRequests.map((req: any) => {
+      const merged = pending.map((req: any) => {
         const userId = typeof req.user_id === "string" ? req.user_id : req.user_id?.id;
-        const profile = profiles?.find((p) => p.id === userId);
-        return {
-          ...req,
-          profile: profile || null
-        };
+        return { ...req, profile: profiles.find((p) => p.id === userId) || null };
       });
 
       setEnhancedRequests(merged);
-    } catch (error) {
-      console.error("Error fetching profiles:", error);
+    } catch {
+      console.error("Error fetching profiles for approval");
     } finally {
       setLoading(false);
     }
@@ -80,73 +70,16 @@ export default function DialogApproval({ groupId, joinRequests }: DialogApproval
     if (!userId) return;
 
     setActionLoading(userId);
-
     try {
-      // 1. Fetch latest group data to ensure we don't overwrite concurrent changes
-      const { data: groupData, error: fetchError } = await supabase
-        .from("groups")
-        .select("join_requests, members")
-        .eq("id", groupId)
-        .single();
+      await handleJoinRequest(groupId, userId, decision);
 
-      if (fetchError) throw fetchError;
-
-      const currentRequests = Array.isArray(groupData.join_requests) ? groupData.join_requests : [];
-      const currentMembers = Array.isArray(groupData.members) ? groupData.members : [];
-
-      // 2. Update status in join_requests
-      const updatedRequests = currentRequests.map((r: any) => {
-        const rId = typeof r.user_id === "string" ? r.user_id : r.user_id?.id;
-        if (rId === userId && r.status === "pending") {
-          return {
-            ...r,
-            status: decision
-            // updated_at: new Date().toISOString()
-          };
-        }
-        return r;
-      });
-
-      // 3. If approved, add to members
-      let updatedMembers = currentMembers;
-      if (decision === "approved") {
-        // Check if already member (collision check)
-        const isMember = currentMembers.some((m: any) => {
-          const mId = typeof m === "string" ? m : m.user_id || m.id;
-          return mId === userId;
-        });
-
-        if (!isMember) {
-          updatedMembers = [
-            ...currentMembers,
-            {
-              user_id: userId,
-              role: "member"
-              //   joined_at: new Date().toISOString()
-            }
-          ];
-        }
-      }
-
-      // 4. Update Database
-      const { error: updateError } = await supabase
-        .from("groups")
-        .update({
-          join_requests: updatedRequests,
-          members: updatedMembers
-        })
-        .eq("id", groupId);
-
-      if (updateError) throw updateError;
-
-      // Log "join" activity when approved
       if (decision === "approved" && profileId) {
         await logGroupActivity(groupId, userId, profileId, "join");
       }
 
       toast.success(`User ${decision} successfully`);
 
-      // Update local state temporarily for snappy UI
+      // Optimistic removal from list
       setEnhancedRequests((prev) =>
         prev.filter((r) => {
           const rId = typeof r.user_id === "string" ? r.user_id : r.user_id?.id;
@@ -155,26 +88,22 @@ export default function DialogApproval({ groupId, joinRequests }: DialogApproval
       );
 
       router.refresh();
-
-      // If list becomes empty, fetchProfiles logic handles it on next render or we can close
-      if (enhancedRequests.length <= 1) {
-        // Maybe close dialog? User didn't ask.
-      }
     } catch (error: any) {
-      console.error("Decision error:", error);
       toast.error(error.message || `Failed to ${decision} user`);
     } finally {
       setActionLoading(null);
     }
   };
 
+  const hasPending = joinRequests?.some((r: any) => r.status === "pending");
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="relative rounded-xl">
           <Bell size={16} />
-          {joinRequests?.some((r: any) => r.status === "pending") && (
-            <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+          {hasPending && (
+            <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500" />
           )}
         </Button>
       </DialogTrigger>
@@ -182,6 +111,7 @@ export default function DialogApproval({ groupId, joinRequests }: DialogApproval
         <DialogHeader>
           <DialogTitle>Approval</DialogTitle>
         </DialogHeader>
+
         <div className="max-h-[60vh] overflow-y-auto">
           {loading ? (
             <div className="py-4 text-center text-sm text-gray-500">Loading requests...</div>
@@ -190,7 +120,8 @@ export default function DialogApproval({ groupId, joinRequests }: DialogApproval
           ) : (
             <div className="divide-y">
               {enhancedRequests.map((req, index) => {
-                const userId = typeof req.user_id === "string" ? req.user_id : req.user_id?.id;
+                const userId =
+                  typeof req.user_id === "string" ? req.user_id : req.user_id?.id;
                 const isProcessing = actionLoading === userId;
 
                 return (
@@ -201,11 +132,12 @@ export default function DialogApproval({ groupId, joinRequests }: DialogApproval
                         {(
                           req.profile?.nickname?.[0] ||
                           req.profile?.fullname?.[0] ||
-                          req.profile?.username?.[0] || // Added username fallback
+                          req.profile?.username?.[0] ||
                           "?"
                         ).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
+
                     <div className="flex-1 overflow-hidden">
                       <p className="truncate font-medium">
                         {req.profile?.nickname ||
@@ -223,6 +155,7 @@ export default function DialogApproval({ groupId, joinRequests }: DialogApproval
                           : "Unknown date"}
                       </p>
                     </div>
+
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
