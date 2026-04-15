@@ -77,6 +77,7 @@ export function QuizCard({
               {quiz._raw?.isPublic ? <Globe size={16} /> : <Lock size={16} />}
             </span>
           </div>
+          
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
