@@ -5,27 +5,21 @@ deploy_proyek:
   stage: build_and_deploy
   tags:
     - nodejs
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}
-    paths:
-      - node_modules/
   script:
-    - echo "🚀 Memulai proses kilat..."
-    
-    # 1. Install & Build di Robot Runner
+    - echo "🚀 Deploy bersih sebagai user www..."
     - npm ci --prefer-offline
     - npm run build
     
-    # 2. Kirim file TANPA -v dan EXCLUDE node_modules
-    # Pakai -az saja (a=archive, z=compress). Tanpa 'v' agar log tidak penuh.
+    # 1. Kirim file
     - rsync -az --delete --exclude '.git' --exclude 'node_modules' ./ root@192.168.1.157:/www/wwwroot/gameforsmartNewUI/
     
-    # 3. Server aaPanel cuma install yang penting (Production) & Restart
+    # 2. Perbaiki Permission & Restart via sudo -u www
     - ssh -o StrictHostKeyChecking=no root@192.168.1.157 "
+        chown -R www:www /www/wwwroot/gameforsmartNewUI && 
         cd /www/wwwroot/gameforsmartNewUI && 
-        npm install --production && 
-        pm2 startOrReload ecosystem.config.js --update-env &&
-        echo '✅ Deploy Berhasil!'
+        sudo -u www npm install --production --no-audit && 
+        sudo -u www pm2 startOrReload ecosystem.config.js --update-env &&
+        echo '✅ Deploy Berhasil via User www!'
       "
   only:
     - main
