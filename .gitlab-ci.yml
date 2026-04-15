@@ -2,14 +2,19 @@ stages:
   - test
   - deploy
 
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+
 check_code:
   stage: test
   tags:
     - nodejs
   script:
-    - echo "Sedang mengecek kelayakan kodingan..."
-    - npm install
-    - npm test || echo "Test belum dikonfigurasi, lanjut..." 
+    - echo "Mengecek kodingan..."
+    - npm ci  # Pakai 'ci' biar lebih cepat di runner
+    - npm test || echo "Skip"
   only:
     - main
 
@@ -18,12 +23,14 @@ deploy_to_aapanel:
   tags:
     - nodejs
   script:
-    - echo "Kodingan aman! Mengirim langsung ke aaPanel tanpa Git Pull..."
+    - echo "Kirim ke aaPanel..."
     - rsync -avz --delete --exclude '.git' --exclude 'node_modules' ./ root@192.168.1.157:/www/wwwroot/gameforsmartNewUI/
     - ssh -o StrictHostKeyChecking=no root@192.168.1.157 "
-        cd /www/wwwroot/GameForSmartLandingPage && 
-        npm install && 
-        pm2 startOrReload ecosystem.config.js && echo 'Aplikasi berhasil di-update dan di-reload!'
+        cd /www/wwwroot/gameforsmartNewUI && 
+        npm install --production && 
+        npm run build && 
+        pm2 startOrReload ecosystem.config.js --update-env && 
+        echo 'Deploy Sukses!'
       "
   only:
-    - main
+    - main  # Pastikan branch-nya sama (tadi kamu tulis master, sekarang saya samain ke main)
