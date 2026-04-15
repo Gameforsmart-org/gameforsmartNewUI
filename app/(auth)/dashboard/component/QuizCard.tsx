@@ -62,7 +62,7 @@ export function QuizCard({
         <div className="flex items-center justify-between">
           <div className="flex gap-1">
             <span
-              title="Category"
+              title="Category test"
               className="rounded-lg border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-bold text-green-700 uppercase dark:border-green-700 dark:bg-green-900/30 dark:text-green-500">
               {category?.title ?? "Umum"}
             </span>
@@ -77,7 +77,6 @@ export function QuizCard({
               {quiz._raw?.isPublic ? <Globe size={16} /> : <Lock size={16} />}
             </span>
           </div>
-          
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
