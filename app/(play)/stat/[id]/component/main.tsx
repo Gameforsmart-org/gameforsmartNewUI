@@ -70,6 +70,7 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
   const [questions, setQuestions] = useState<Question[]>([]);
   const [players, setPlayers] = useState<PlayerWithResponses[]>([]);
   const [currentPlayerId, setCurrentPlayerId] = useState<string | undefined>();
+  const [sessionData, setSessionData] = useState<any>(null);
   const [isCollapsedAll, setIsCollapsedAll] = useState(false);
   const [collapsedItems, setCollapsedItems] = useState<Record<string, boolean>>({});
 
@@ -138,6 +139,7 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
           (localUserId && localUserId === session.host_id);
 
         setIsHost(!!hostCheck);
+        setSessionData(session);
 
         const quiz = Array.isArray(session.quizzes) ? session.quizzes[0] : session.quizzes;
         const fullQuestions = quiz?.questions || [];
@@ -383,7 +385,9 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
           <Card className="border-none bg-gray-50 shadow-mdA transition-colors hover:bg-gray-100">
             <CardContent className="space-y-2">
               <div>
-                <h2 className="text-2xl font-bold">Quiz matematika dasar perkalian dibawah 50</h2>
+                <h2 className="text-2xl font-bold">
+                  {sessionData?.quiz_detail?.title || "Untitled Quiz"}
+                </h2>
               </div>
               <div className="flex items-center gap-4">
                 <div title="questions" className="flex items-center gap-1">
@@ -396,11 +400,21 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
                 </div>
                 <div title="durations" className="flex items-center gap-1">
                   <Timer size={16} />
-                  <p>9:25</p>
+                  <p>
+                    {(() => {
+                      if (!sessionData?.started_at || !sessionData?.ended_at) return "-";
+                      const diffMs = new Date(sessionData.ended_at).getTime() - new Date(sessionData.started_at).getTime();
+                      if (diffMs <= 0) return "0:00";
+                      const totalSeconds = Math.floor(diffMs / 1000);
+                      const minutes = Math.floor(totalSeconds / 60);
+                      const seconds = totalSeconds % 60;
+                      return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+                    })()}
+                  </p>
                 </div>
                 <div title="Application" className="flex items-center gap-1">
                   <Gamepad2 size={16} />
-                  <p>Axiom</p>
+                  <p>{sessionData?.application || "-"}</p>
                 </div>
               </div>
             </CardContent>
