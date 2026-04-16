@@ -294,6 +294,153 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
     };
   };
 
+  const handleDownloadPDF = () => {
+    const quizTitle = sessionData?.quiz_detail?.title || "Untitled Quiz";
+    const application = sessionData?.application || "-";
+
+    // Calculate duration
+    let duration = "-";
+    if (sessionData?.started_at && sessionData?.ended_at) {
+      const diffMs = new Date(sessionData.ended_at).getTime() - new Date(sessionData.started_at).getTime();
+      if (diffMs > 0) {
+        const totalSec = Math.floor(diffMs / 1000);
+        const min = Math.floor(totalSec / 60);
+        const sec = totalSec % 60;
+        duration = `${min}:${sec.toString().padStart(2, "0")}`;
+      } else {
+        duration = "0:00";
+      }
+    }
+
+    // Build per-question HTML
+    const questionsHtml = questions.map((q, idx) => {
+      const stats = getQuestionStats(q.id);
+      const myStatus = getMyAnswerStatus(q.id);
+
+      const answersHtml = q.answers.map((ans, aIdx) => {
+        const isCorrect =
+          (q.correct !== undefined && String(q.correct) === String(ans.id)) ||
+          ans.isCorrect === true;
+        const label = String.fromCharCode(65 + aIdx);
+        const text = ans.text || ans.answer || ans.option || ans.label || "";
+
+        return `
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid ${isCorrect ? '#bbf7d0' : '#e2e8f0'};border-radius:6px;background:${isCorrect ? '#f0fdf4' : '#fff'};margin-bottom:6px;">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:4px;font-size:12px;font-weight:700;background:${isCorrect ? '#bbf7d0' : '#f1f5f9'};color:${isCorrect ? '#166534' : '#64748b'};flex-shrink:0;">${label}</span>
+            <span style="flex:1;font-size:13px;${isCorrect ? 'font-weight:600;color:#166534;' : 'color:#475569;'}">${text}${isCorrect ? ' ✓' : ''}</span>
+          </div>`;
+      }).join("");
+
+      // Stats line (for host view)
+      const statsLine = isHost && stats
+        ? `<div style="display:flex;align-items:center;justify-content:start;gap:10px;"> <strong style="display:inline-block;background:#fff7ed;color:#c2410c;font-size:12px;font-weight:600;padding:3px 10px;border-radius:4px;">${stats.percentCorrect}%</strong><span style="display:inline-block;background:#fff7ed;color:#c2410c;font-size:12px;font-weight:600;padding:3px 10px;border-radius:4px;">✓ ${stats.correctCount} correct</span><span style="display:inline-block;background:#fff7ed;color:#c2410c;font-size:12px;font-weight:600;padding:3px 10px;border-radius:4px;">✗ ${stats.incorrectCount} incorrect</span></div>`
+        : "";
+
+      // Player wrong answer line
+      let playerLine = "";
+      if (!isHost && myStatus?.status === "incorrect") {
+        const userAns = q.answers.find(a => String(a.id).trim() === String(myStatus.userAnswerId).trim());
+        const userText = userAns ? (userAns.text || userAns.answer || userAns.option || userAns.label || "No text") : "No answer";
+        playerLine = `<div style="margin-top:8px;padding:8px 12px;background:#fef2f2;border-radius:6px;font-size:12px;color:#dc2626;">Your answer: <strong>${userText}</strong></div>`;
+      } else if (!isHost && myStatus?.status === "correct") {
+        playerLine = `<div style="margin-top:8px;padding:8px 12px;background:#f0fdf4;border-radius:6px;font-size:12px;color:#16a34a;">✓ You answered correctly</div>`;
+      }
+
+      return `
+        <div style="page-break-inside:avoid;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:16px;overflow:hidden;">
+          <div style="padding:14px 16px;border-bottom:1px solid #f1f5f9;">
+          <div style="display:flex;align-items:center;justify-content:start;gap:10px;">
+            <span style="display:inline-block;background:#fff7ed;color:#c2410c;font-size:12px;font-weight:600;padding:3px 10px;border-radius:4px;">Question ${idx + 1}</span>
+            ${statsLine}
+            </div>
+            <p style="font-size:14px;font-weight:500;color:#1e293b;margin:6px 0 0 0;line-height:1.5;">${q.question}</p>
+          </div>
+          <div style="padding:12px 16px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+              ${answersHtml}
+            </div>
+            
+            ${playerLine}
+          </div>
+        </div>`;
+    }).join("");
+
+    // Overall accuracy
+    const overallAccuracy = totalAnswers > 0 ? Math.round((totalCorrectAnswers / totalAnswers) * 100) : 0;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Statistics - ${quizTitle}</title>
+        <style>
+          @media print {
+            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1e293b; padding: 32px; max-width: 800px; margin: 0 auto; }
+          .header { text-align: center; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid #fed7aa; }
+          .header h1 { font-size: 22px; font-weight: 700; color: #c2410c; margin-bottom: 4px; }
+          .header h2 { font-size: 16px; font-weight: 400; color: #64748b; }
+          .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+          .summary-card { text-align: center; padding: 14px 8px; border-radius: 10px; border: 1px solid #f1f5f9; }
+          .summary-card .value { font-size: 22px; font-weight: 800; color: #0f172a; }
+          .summary-card .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+          .section-title { font-size: 15px; font-weight: 700; color: #c2410c; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #fed7aa; }
+          .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>${quizTitle}</h1>
+        </div>
+
+        <div class="summary">
+          <div class="summary-card" style="background:#fff7ed;">
+            <div class="value" style="color:#c2410c;">${totalQuestions}</div>
+            <div class="label" style="color:#ea580c;">Questions</div>
+          </div>
+           <div class="summary-card" style="background:#eff6ff;">
+            <div class="value" style="color:#2563eb;">${players.length}</div>
+            <div class="label" style="color:#2563eb;">Players</div>
+          </div>
+          <div class="summary-card" style="background:#f0fdf4;">
+            <div class="value" style="color:#16a34a;">${duration}</div>
+            <div class="label" style="color:#16a34a;">Duration</div>
+          </div>
+          <div class="summary-card" style="background:#faf5ff;">
+            <div class="value" style="color:#9333ea;">${application}</div>
+            <div class="label" style="color:#9333ea;">Application</div>
+          </div>
+        </div>
+
+        ${questionsHtml}
+
+        <div class="footer">
+          Generated from GameForSmart &bull; ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      // Wait for content to render before triggering print
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+      // Fallback for browsers where onload may not fire
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    } else {
+      toast.error("Please allow pop-ups to download PDF");
+    }
+  };
+
   return (
     <div className="base-background animate-in fade-in flex min-h-screen flex-col duration-200">
       {/* 1. Header Navigation */}
@@ -305,7 +452,7 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2 bg-orange-300 text-white">
+          <Button variant="outline" className="gap-2 bg-orange-300 text-white" onClick={handleDownloadPDF}>
             <Download className="h-4 w-4" />
             <p>Download PDF</p>
           </Button>
@@ -328,60 +475,6 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
       <div className="flex-1 overflow-y-auto bg-slate-50/30">
         <div className="container mx-auto max-w-6xl space-y-4 p-6 pt-0 pb-20">
           {/* Summary Cards (Host Only) */}
-          {/* {isHost && (
-            <div className="grid grid-cols-3 gap-3 md:gap-4">
-              Questions Card
-              <Card className="!gap-2 border-none bg-orange-50/50 !py-2.5 shadow-sm transition-colors hover:bg-blue-50">
-                <CardContent className="flex flex-col items-center justify-between gap-1.5 p-3 md:flex-row md:items-start md:gap-4">
-                  <div className="order-2 flex flex-col items-center md:order-1 md:items-start">
-                    <span className="text-[10px] font-semibold tracking-wider text-orange-600/70 uppercase md:text-xs">
-                      Questions
-                    </span>
-                    <div className="mt-0.5 text-xl leading-none font-black text-slate-900 md:text-3xl">
-                      {totalQuestions}
-                    </div>
-                  </div>
-                  <div className="order-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-100 md:order-2 md:h-10 md:w-10">
-                    <FileQuestion className="h-3.5 w-3.5 text-orange-600 md:h-5 md:w-5" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              Answers Card
-              <Card className="!gap-2 border-none bg-amber-50/50 !py-2.5 shadow-sm transition-colors hover:bg-amber-50">
-                <CardContent className="flex flex-col items-center justify-between gap-1.5 p-3 md:flex-row md:items-start md:gap-4">
-                  <div className="order-2 flex flex-col items-center md:order-1 md:items-start">
-                    <span className="text-[10px] font-semibold tracking-wider text-amber-600/70 uppercase md:text-xs">
-                      Answers
-                    </span>
-                    <div className="mt-0.5 text-xl leading-none font-black text-slate-900 md:text-3xl">
-                      {totalAnswers}
-                    </div>
-                  </div>
-                  <div className="order-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 md:order-2 md:h-10 md:w-10">
-                    <MessageSquare className="h-3.5 w-3.5 text-amber-600 md:h-5 md:w-5" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              Correct Card
-              <Card className="!gap-2 border-none bg-green-50/50 !py-2.5 shadow-sm transition-colors hover:bg-green-50">
-                <CardContent className="flex flex-col items-center justify-between gap-1.5 p-3 md:flex-row md:items-start md:gap-4">
-                  <div className="order-2 flex flex-col items-center md:order-1 md:items-start">
-                    <span className="text-[10px] font-semibold tracking-wider text-green-600/70 uppercase md:text-xs">
-                      Correct
-                    </span>
-                    <div className="mt-0.5 text-xl leading-none font-black text-slate-900 md:text-3xl">
-                      {totalCorrectAnswers}
-                    </div>
-                  </div>
-                  <div className="order-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-100 md:order-2 md:h-10 md:w-10">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-600 md:h-5 md:w-5" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )} */}
           <Card className="border-none bg-gray-50 shadow-mdA transition-colors hover:bg-gray-100">
             <CardContent className="space-y-2">
               <div>
