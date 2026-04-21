@@ -9,7 +9,7 @@ interface AvatarUploadProps {
   currentAvatar: string;
   preview: string | null;
   fullName: string;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onCameraClick: () => void;
 }

@@ -15,7 +15,7 @@ export function useEditProfile(data: ProfileData, onCancel: () => void) {
   // Avatar
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Location
   const [location, setLocation] = useState<LocationValue>({
