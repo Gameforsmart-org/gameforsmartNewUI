@@ -807,7 +807,7 @@ export default function StatisticsPage({ params }: { params: Promise<{ id: strin
                         {isHost && stats && (
                           <div className="space-y-2 px-4 pt-0 pb-4">
                             <div className="text-muted-foreground flex items-center justify-between text-xs font-medium tracking-wide uppercase">
-                              <span>Accuracy</span>
+                              <span>Correct</span>
                               <span className="font-bold text-slate-900">
                                 {stats.percentCorrect}%
                               </span>
