@@ -1,5 +1,6 @@
 "use client";
 
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -8,26 +9,30 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import { ExternalLink } from "lucide-react";
+import type { QuizStat } from "../types";
 
-interface Quiz {
-  id: string;
-  rank: number;
-  name: string;
-  plays: number;
-  avgScore: number;
-}
-
-interface Props {
-  quizzes: Quiz[];
+interface TopQuizzesTableProps {
+  quizzes: QuizStat[];
   loading?: boolean;
   onQuizClick?: (quizId: string) => void;
 }
 
-export default function TopQuizzesTable({ quizzes, loading, onQuizClick }: Props) {
+function RankBadge({ rank }: { rank: number }) {
+  const color =
+    rank === 1 ? "bg-yellow-500"
+    : rank === 2 ? "bg-gray-400"
+    : rank === 3 ? "bg-amber-600"
+    : "bg-blue-500";
+
+  return (
+    <div
+      className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white ${color}`}>
+      {rank}
+    </div>
+  );
+}
+
+export function TopQuizzesTable({ quizzes, loading, onQuizClick }: TopQuizzesTableProps) {
   return (
     <Card className="rounded-2xl shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -62,33 +67,15 @@ export default function TopQuizzesTable({ quizzes, loading, onQuizClick }: Props
               quizzes.map((quiz) => (
                 <TableRow
                   key={quiz.rank}
-                  className={
-                    onQuizClick ? "hover:bg-muted/50 cursor-pointer transition-colors" : ""
-                  }
-                  onClick={() => onQuizClick && onQuizClick(quiz.id)}>
+                  onClick={() => onQuizClick?.(quiz.id)}
+                  className={onQuizClick ? "hover:bg-muted/50 cursor-pointer transition-colors" : ""}>
                   <TableCell className="flex items-center gap-2 font-medium">
-                    <div
-                      className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white ${
-                        quiz.rank === 1
-                          ? "bg-yellow-500"
-                          : quiz.rank === 2
-                            ? "bg-gray-400"
-                            : quiz.rank === 3
-                              ? "bg-amber-600"
-                              : "bg-blue-500"
-                      }`}>
-                      {quiz.rank}
-                    </div>
+                    <RankBadge rank={quiz.rank} />
                   </TableCell>
-
                   <TableCell>{quiz.name}</TableCell>
-
                   <TableCell>{quiz.plays.toLocaleString()}</TableCell>
-
                   <TableCell className="w-[200px]">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium">{quiz.avgScore}</span>
-                    </div>
+                    <span className="text-sm font-medium">{quiz.avgScore}</span>
                   </TableCell>
                 </TableRow>
               ))

@@ -1,5 +1,5 @@
 import { generateMeta } from "@/lib/utils";
-import EvaluationContent from "./component/main";
+import EvaluationContent from "./component/evaluation-content";
 
 export async function generateMetadata() {
   return generateMeta({
@@ -10,7 +10,5 @@ export async function generateMetadata() {
 }
 
 export default function Page() {
-    return (
-        <EvaluationContent />
-    );
+  return <EvaluationContent />;
 }
