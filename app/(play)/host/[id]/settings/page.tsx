@@ -1,4 +1,4 @@
-import { Settings } from "./component";
+import { Settings } from "./component/settings";
 import { generateMeta } from "@/lib/utils";
 
 export async function generateMetadata(props: { params: Promise<{ id: string }> }) {

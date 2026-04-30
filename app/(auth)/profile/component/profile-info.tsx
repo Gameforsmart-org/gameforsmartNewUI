@@ -22,7 +22,8 @@ export function ProfileInfo({ personal, address }: ProfileInfoProps) {
           <InfoField label="USERNAME"               value={personal.username} />
           <InfoField label="EMAIL ADDRESS"          value={personal.email} />
           <InfoField label="DATE OF BIRTH"          value={personal.birthDate} />
-          <InfoField label="ORGANIZATION/INSTITUTION" value={personal.grade} />
+          <InfoField label="GRADE"                  value={personal.grade} />
+          <InfoField label="ORGANIZATION/INSTITUTION" value={personal.organization} />
           <InfoField label="PHONE NUMBER"           value={personal.phone} />
           <InfoField label="GENDER"                 value={personal.gender} />
         </div>

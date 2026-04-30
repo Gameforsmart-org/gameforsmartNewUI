@@ -1,387 +1,106 @@
 "use client";
 
-import { useEffect, useState, useRef, use } from "react";
-import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
+  Dialog, DialogClose, DialogContent, DialogDescription,
+  DialogFooter, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { CircleQuestionMark, Timer, User, Loader2 } from "lucide-react";
-import Image from "next/image";
-import { toast } from "sonner";
-import {
-  getGameSessionRT,
-  getParticipantsRT,
-  subscribeToGameRT,
-  updateGameSessionRT,
-  unsubscribeFromGameRT,
-  GameSessionRT,
-  GameParticipantRT,
-  supabaseRealtime
-} from "@/lib/supabase-realtime";
-import { GameTimer, GameTimerProgress, useGameCountdown, GameCountdown } from "@/app/(play)/component/game-timer";
-import { supabase } from "@/lib/supabase";
-import { getServerNow } from "@/lib/server-time";
 import { motion, AnimatePresence } from "motion/react";
+import { GameTimer, GameTimerProgress, GameCountdown } from "@/app/(play)/component/game-timer";
+import { useHostPlay } from "../hooks/use-host-play";
 
-interface PlayProps {
-  sessionId: string;
-}
+interface PlayProps { sessionId: string; }
 
 export default function Play({ sessionId }: PlayProps) {
-  const router = useRouter();
-  const [session, setSession] = useState<GameSessionRT | null>(null);
-  const [participants, setParticipants] = useState<
-    Array<GameParticipantRT & { avatar_url?: string }>
-  >([]);
-  const [loading, setLoading] = useState(true);
-  const [showLoader, setShowLoader] = useState(false);
-
-  // Track countdown_started_at from RT subscription
-  const [countdownStartedAt, setCountdownStartedAt] = useState<string | null>(null);
-
-  // DB-synced countdown using countdown_started_at from game_sessions_rt
-  const { countdownLeft, showCountdown } = useGameCountdown({
-    countdownStartedAt,
-    countdownDuration: 10,
-    onCountdownFinished: () => {
-      fetchSessionData();
-    },
-  });
-
-  // Profile cache
-  const profileCache = useRef(new Map<string, string>());
-
-  // Re-fetch session data helper
-  const fetchSessionData = async () => {
-    try {
-      const sess = await getGameSessionRT(sessionId);
-      if (!sess) {
-        toast.error("Session not found");
-        router.push("/dashboard");
-        return;
-      }
-      setSession(sess);
-      // Feed countdown_started_at to the countdown hook
-      if (sess.countdown_started_at) {
-        setCountdownStartedAt(sess.countdown_started_at);
-      }
-
-      const parts = await getParticipantsRT(sessionId);
-      // Fetch profiles
-      const userIds = parts.map((p) => p.user_id).filter((id) => id) as string[];
-      await fetchProfiles(userIds);
-
-      const partsWithProfile = parts.map((p) => ({
-        ...p,
-        avatar_url: p.user_id ? profileCache.current.get(p.user_id) : undefined
-      }));
-
-      // Sort initially by progress
-      partsWithProfile.sort((a, b) => (b.responses?.length || 0) - (a.responses?.length || 0));
-      setParticipants(partsWithProfile);
-
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      // Don't toast error on re-fetch to avoid spam
-    }
-  };
-
-  // Simple Countdown Effect
-
-  // Polling for started_at: Keep checking until it's available
-  useEffect(() => {
-    // Only poll if countdown is finished but started_at is not yet available
-    if (showCountdown) return;
-    if (session?.started_at) return; // Already have it
-
-    const pollInterval = setInterval(async () => {
-      try {
-        const sess = await getGameSessionRT(sessionId);
-        if (sess?.started_at) {
-          setSession((prev) => (prev ? { ...prev, ...sess } : null));
-          clearInterval(pollInterval);
-        }
-      } catch (e) {
-        console.error("Polling error:", e);
-      }
-    }, 500); // Check every 500ms
-
-    return () => clearInterval(pollInterval);
-  }, [showCountdown, session?.started_at, sessionId]);
-
-  // Fetch Profiles Helper
-  const fetchProfiles = async (userIds: string[]) => {
-    const uncached = userIds.filter((id) => id && !profileCache.current.has(id));
-    if (uncached.length === 0) return;
-
-    const { data } = await supabase.from("profiles").select("id, avatar_url").in("id", uncached);
-
-    if (data) {
-      data.forEach((p) => {
-        if (p.avatar_url) profileCache.current.set(p.id, p.avatar_url);
-      });
-    }
-  };
-
-  // Initial Fetch & Subscribe
-  useEffect(() => {
-    fetchSessionData();
-
-    // Subscribe
-    const channel = subscribeToGameRT(sessionId, {
-      onSessionChange: (updatedSession) => {
-        setSession((prev) => (prev ? { ...prev, ...updatedSession } : null));
-        // Feed countdown_started_at to the countdown hook
-        if (updatedSession.countdown_started_at) {
-          setCountdownStartedAt(updatedSession.countdown_started_at);
-        }
-        if (updatedSession.status === "finished") {
-          router.push(`/result/${sessionId}`);
-        }
-      },
-      onParticipantChange: async () => {
-        // Refresh list to keep sync (simplified)
-        const freshParts = await getParticipantsRT(sessionId);
-        if (!freshParts) return; // Guard
-
-        // Fetch profiles for new ones
-        const userIds = freshParts.map((p) => p.user_id).filter((id) => id) as string[];
-        await fetchProfiles(userIds);
-
-        const mapped = freshParts.map((p) => ({
-          ...p,
-          avatar_url: p.user_id ? profileCache.current.get(p.user_id) : undefined
-        }));
-
-        // Sort by progress (responses count)
-        mapped.sort((a, b) => (b.responses?.length || 0) - (a.responses?.length || 0));
-        setParticipants(mapped);
-      }
-    });
-    if(session?.status === "finished"){
-      router.push(`/result/${sessionId}`)
-    };
-
-    return () => {
-      unsubscribeFromGameRT(channel);
-    };
-  }, [sessionId, router]);
-
-  const handleEndGame = async () => {
-    try {
-      if (!supabaseRealtime) throw new Error("Realtime client not initialized");
-
-      // Use Edge Function 'submit-game' with action 'end'
-      const { error } = await supabaseRealtime.functions.invoke("submit-game", {
-        body: {
-          action: "end",
-          sessionId
-        }
-      });
-
-      if (error) throw error;
-
-      toast.success("Session ended successfully");
-      // Redirect handled by subscription
-    } catch (err: any) {
-      console.error("End Game Error:", err);
-      toast.error("Failed to end session: " + err.message);
-    }
-  };
-
-  const handleTimeUp = async () => {
-    // Auto end game via existing handler
-    if (session?.status === "active") {
-      await handleEndGame();
-    }
-  };
-
-  const questionLimit = session
-    ? session.question_limit === "all"
-      ? 100
-      : parseInt(session.question_limit) || 0
-    : 0;
-
-  const isLoading = loading || !session;
-
-  // Debounce Loader to prevent flicker
-  useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    if (isLoading && !showCountdown) {
-      timeout = setTimeout(() => setShowLoader(true), 200);
-    } else {
-      setShowLoader(false);
-    }
-    return () => clearTimeout(timeout);
-  }, [isLoading, showCountdown]);
-
-  // Dynamic background
-  const bgColor = isLoading || showCountdown ? "bg-black" : "bg-rose-50";
+  const {
+    session, participants, loading, showLoader,
+    showCountdown, countdownLeft,
+    handleEndGame, handleTimeUp
+  } = useHostPlay(sessionId);
 
   return (
-    <div
-      className={`base-background min-h-screen w-full transition-colors duration-300 dark:bg-zinc-950`}>
-      {/* Countdown Overlay */}
-      <GameCountdown
-        countdownLeft={countdownLeft}
-        showCountdown={showCountdown}
-        title="Game Starting..."
-      />
+    <div className="base-background min-h-screen w-full transition-colors duration-300 dark:bg-zinc-950">
+      <GameCountdown countdownLeft={countdownLeft} showCountdown={showCountdown} title="Game Starting..." />
 
-      {/* Main Content */}
-      {isLoading || showCountdown ? (
+      {loading || showCountdown ? (
         <div className="flex min-h-screen items-center justify-center">
-          {showLoader && !showCountdown && (
-            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-          )}
+          {showLoader && !showCountdown && <Loader2 className="h-8 w-8 animate-spin text-orange-500" />}
         </div>
       ) : (
         <>
-          {/* Header Bar - Rose-50 diubah ke Orange-50/Zinc */}
           <div className="fixed top-[3.6rem] right-0 left-0 z-50 w-full backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/90">
-            {/* Progress Bar Timer */}
             <div className="absolute right-0 -bottom-1.5 left-0">
-              <GameTimerProgress
-                startedAt={session.started_at}
-                totalTimeMinutes={session.total_time_minutes}
-                status={session.status}
-                onTimeUp={handleTimeUp}
-              />
+              <GameTimerProgress startedAt={session!.started_at} totalTimeMinutes={session!.total_time_minutes} status={session!.status} onTimeUp={handleTimeUp} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-2 lg:grid-cols-[1fr_360px]">
             <div className="lg:fixed lg:top-16 lg:right-2 lg:order-1 max-h-fit">
               <Card>
-                <CardContent className=" flex flex-col items-center space-y-4">
-                  {/* Timer Display */}
-                  <div className="">
-                    <GameTimer
-                      startedAt={session.started_at}
-                      totalTimeMinutes={session.total_time_minutes}
-                      status={session.status}
-                      onTimeUp={handleTimeUp}
-                    />
-                  </div>
-                    
-                  {/* Statistik - Update Icon & Text Colors */}
-                  <div className="flex w-full items-center justify-center gap-8 py-2 md:flex-1 md:py-0">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="flex items-center gap-2 text-lg font-bold text-orange-900 dark:text-zinc-100">
-                        <CircleQuestionMark className="size-5 text-yellow-500" />
-                        <span>{session.question_limit}</span>
+                <CardContent className="flex flex-col items-center space-y-4">
+                  <GameTimer startedAt={session!.started_at} totalTimeMinutes={session!.total_time_minutes} status={session!.status} onTimeUp={handleTimeUp} />
+
+                  <div className="flex w-full items-center justify-center gap-8 py-2">
+                    {[
+                      { icon: CircleQuestionMark, value: session!.question_limit, label: "QUESTIONS", color: "text-yellow-500" },
+                      { icon: Timer, value: `${session!.total_time_minutes}m`, label: "TIME", color: "text-orange-500" },
+                      { icon: User, value: participants.length, label: "PLAYERS", color: "text-green-500" }
+                    ].map(({ icon: Icon, value, label, color }) => (
+                      <div key={label} className="flex flex-col items-center">
+                        <div className="flex items-center gap-2 text-lg font-bold text-orange-900 dark:text-zinc-100">
+                          <Icon className={`size-5 ${color}`} /><span>{value}</span>
+                        </div>
+                        <p className="text-[10px] font-bold tracking-wider text-orange-600/60 uppercase">{label}</p>
                       </div>
-                      <p className="text-[10px] font-bold tracking-wider text-orange-600/60 uppercase dark:text-orange-400/60">
-                        QUESTIONS
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="flex items-center gap-2 text-lg font-bold text-orange-900 dark:text-zinc-100">
-                        <Timer className="size-5 text-orange-500" />
-                        <span>{session.total_time_minutes}m</span>
-                      </div>
-                      <p className="text-[10px] font-bold tracking-wider text-orange-600/60 uppercase dark:text-orange-400/60">
-                        TIME
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="flex items-center gap-2 text-lg font-bold text-orange-900 dark:text-zinc-100">
-                        <User className="size-5 text-green-500" />
-                        <span>{participants.length}</span>
-                      </div>
-                      <p className="text-[10px] font-bold tracking-wider text-orange-600/60 uppercase dark:text-orange-400/60">
-                        PLAYERS
-                      </p>
-                    </div>
+                    ))}
                   </div>
 
-                  {/* dialog  end game */}
                   <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant={"destructive"} className="bg-red-600 hover:bg-red-700">
-                          End Session
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="dark:border-zinc-800 dark:bg-zinc-900">
-                        <DialogHeader>
-                          <DialogTitle className="dark:text-zinc-100">End Session</DialogTitle>
-                          <DialogDescription className="dark:text-zinc-400">
-                            Are you sure you want to end this session?
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                          <DialogClose asChild>
-                            <Button
-                              variant="outline"
-                              className="dark:border-zinc-700 dark:text-zinc-300">
-                              Cancel
-                            </Button>
-                          </DialogClose>
-                          <DialogClose asChild>
-                            <Button variant="destructive" onClick={handleEndGame}>
-                              End Session
-                            </Button>
-                          </DialogClose>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="destructive" className="bg-red-600 hover:bg-red-700">End Session</Button>
+                    </DialogTrigger>
+                    <DialogContent className="dark:border-zinc-800 dark:bg-zinc-900">
+                      <DialogHeader>
+                        <DialogTitle className="dark:text-zinc-100">End Session</DialogTitle>
+                        <DialogDescription className="dark:text-zinc-400">Are you sure you want to end this session?</DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                        <DialogClose asChild><Button variant="destructive" onClick={handleEndGame}>End Session</Button></DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </CardContent>
               </Card>
             </div>
-            {/* Participant Grid */}
+
             <div className="sm:order-2">
-              <div className=" grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                 <AnimatePresence mode="popLayout">
                   {participants.map((p) => {
-                    const answeredCount = p.responses?.length || 0;
-                    const max =
-                      parseInt(session.question_limit) || session.current_questions?.length || 20;
-                    const percent = Math.min(100, Math.round((answeredCount / max) * 100));
-
+                    const answered = p.responses?.length || 0;
+                    const max = parseInt(session!.question_limit) || session!.current_questions?.length || 20;
+                    const percent = Math.min(100, Math.round((answered / max) * 100));
                     return (
-                      <motion.div
-                        key={p.id}
-                        layout
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.8, opacity: 0 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 25 }}>
+                      <motion.div key={p.id} layout initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 25 }}>
                         <Card className="h-full border-orange-100 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                           <CardContent className="px-4">
                             <div className="flex items-center justify-between gap-3">
                               <Avatar className="border-2 border-orange-100 dark:border-zinc-700">
                                 <AvatarImage src={p.avatar_url} alt={p.nickname} />
-                                <AvatarFallback className="bg-orange-100 font-bold text-orange-600 dark:bg-zinc-800 dark:text-orange-400">
-                                  {p.nickname.substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
+                                <AvatarFallback className="bg-orange-100 font-bold text-orange-600">{p.nickname.substring(0, 2).toUpperCase()}</AvatarFallback>
                               </Avatar>
-                              <p className="flex-1 overflow-hidden font-bold text-ellipsis text-orange-950 dark:text-zinc-100">
-                                {p.nickname}
-                              </p>
-                              <p className="text-xs font-black text-green-600 dark:text-green-400">
-                                {percent}%
-                              </p>
+                              <p className="flex-1 overflow-hidden font-bold text-ellipsis text-orange-950 dark:text-zinc-100">{p.nickname}</p>
+                              <p className="text-xs font-black text-green-600">{percent}%</p>
                             </div>
                             <div className="mt-4 flex flex-col gap-1">
-                              <div className="flex items-center justify-between text-[10px] font-bold tracking-widest text-orange-800/50 uppercase dark:text-zinc-500">
-                                <p>Progress</p>
-                                <p>
-                                  {answeredCount}/{max}
-                                </p>
+                              <div className="flex items-center justify-between text-[10px] font-bold tracking-widest text-orange-800/50 uppercase">
+                                <p>Progress</p><p>{answered}/{max}</p>
                               </div>
-                              {/* Progress bar menggunakan warna Hijau */}
                               <Progress value={percent} className="h-2 bg-orange-500" />
                             </div>
                           </CardContent>
@@ -396,9 +115,7 @@ export default function Play({ sessionId }: PlayProps) {
 
           {participants.length === 0 && (
             <div className="py-20 text-center">
-              <p className="font-medium text-orange-300 dark:text-zinc-600">
-                Waiting for participants to join...
-              </p>
+              <p className="font-medium text-orange-300 dark:text-zinc-600">Waiting for participants to join...</p>
             </div>
           )}
         </>
